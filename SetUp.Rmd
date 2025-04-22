@@ -1,0 +1,50 @@
+---
+title: "SetUp"
+output: html_document
+---
+
+
+```{r}
+annotation_df_prot <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Proteomics/anno_df.RDS")
+
+# colnames(annotation_df_prot) <- colnames(annotation_df_trans)
+# saveRDS(annotation_df_prot, "/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Proteomics/anno_df.RDS")
+annotation_df_trans <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Transcriptomics/anno_df.rds")
+annotation_df_metabo <- NULL
+
+results_prot <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Proteomics/results_object.rds")
+se_prot <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Proteomics/se.rds")
+# se_prot <- NULL
+
+results_trans <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Transcriptomics/results_object.rds")
+se_trans <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Transcriptomics/se.rds")
+# se_trans <- NULL
+
+results_metabo <- NULL
+se_metabo <- NULL
+
+metadata <- data.frame(readxl::read_excel("/Users/edoardofilippi/Development/Projects/BasicApp/Transcriptomics_limma/samplesDesign_paul_AT2full.xlsx"))
+rownames(metadata) <- metadata$sample_id
+```
+
+
+```{r}
+movida_list <- list(
+    annotation_df_prot = annotation_df_prot,
+    annotation_df_trans = annotation_df_trans,
+    annotation_df_metabo = annotation_df_metabo,
+    results_prot = results_prot,
+    results_trans = results_trans,
+    results_metabo = results_trans,
+    se_prot = se_prot,
+    se_trans = se_trans,
+    se_metabo = se_trans,
+    metadata = metadata
+)
+```
+
+
+```{r}
+source("FirstIteration.r")
+MovidaApp(movida_list)
+```
