@@ -2,6 +2,8 @@ library(shiny)
 library(bslib)
 library(gargoyle)
 
+movida_data <- MovidaModelSingleton$get_instance(movida_list)
+
 server <- function(input, output, session) {
 
   # Call module servers
