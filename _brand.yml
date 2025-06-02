@@ -1,0 +1,11 @@
+version: 1
+
+brand:
+  color:
+    primary: "#ff6600"
+    background: "#ffffff"
+    foreground: "#000000"
+  typography:
+    base:
+      family: "Georgia, serif"
+      size: 1rem
