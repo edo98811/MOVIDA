@@ -5,19 +5,19 @@ output: html_document
 
 
 ```{r}
-annotation_df_prot <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Proteomics/anno_df.RDS")
+annotation_df_prot <- readRDS("/Users/edoardofilippi/Development/Projects/MOVIDA/Example_data/Proteomics/anno_df.RDS")
 
 # colnames(annotation_df_prot) <- colnames(annotation_df_trans)
-# saveRDS(annotation_df_prot, "/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Proteomics/anno_df.RDS")
-annotation_df_trans <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Transcriptomics/anno_df.rds")
+# saveRDS(annotation_df_prot, "/Users/edoardofilippi/Development/Projects/MOVIDA/Example_data/Proteomics/anno_df.RDS")
+annotation_df_trans <- readRDS("/Users/edoardofilippi/Development/Projects/MOVIDA/Example_data/Transcriptomics/anno_df.rds")
 annotation_df_metabo <- NULL
 
-results_prot <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Proteomics/results_object.rds")
-se_prot <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Proteomics/se.rds")
+results_prot <- readRDS("/Users/edoardofilippi/Development/Projects/MOVIDA/Example_data/Proteomics/results_object.rds")
+se_prot <- readRDS("/Users/edoardofilippi/Development/Projects/MOVIDA/Example_data/Proteomics/se.rds")
 # se_prot <- NULL
 
-results_trans <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Transcriptomics/results_object.rds")
-se_trans <- readRDS("/Users/edoardofilippi/Development/Projects/BasicApp/Example_data/Transcriptomics/se.rds")
+results_trans <- readRDS("/Users/edoardofilippi/Development/Projects/MOVIDA/Example_data/Transcriptomics/results_object.rds")
+se_trans <- readRDS("/Users/edoardofilippi/Development/Projects/MOVIDA/Example_data/Transcriptomics/se.rds")
 # se_trans <- NULL
 
 results_metabo <- NULL
@@ -27,6 +27,34 @@ metadata <- data.frame(readxl::read_excel("/Users/edoardofilippi/Development/Pro
 rownames(metadata) <- metadata$sample_id
 ```
 
+
+```{r}
+colnames(annotation_df_trans) <- c("UNIPROT_ID", "SYMBOL", "ENSEMBL_ID")
+colnames(annotation_df_prot) <- c("UNIPROT_ID", "SYMBOL", "ENSEMBL_ID")
+
+round_results_tables <- function(results_list) {
+  lapply(results_list, function(result) {
+    lapply(result, function(df) {
+      if (is.data.frame(df)) {
+        if (identical(names(df), "topGO_tbl") || identical(names(df), "tbl_res_all")) {
+          df[] <- lapply(df, function(col) {
+            if (is.numeric(col)) round(col, 4) else col
+          })
+        }
+        if (identical(names(df), "tbl_res_all")) {
+          df <- df[, !(names(df) %in% c("CI.I", "CI.L"))]
+        }
+      }
+      df
+    })
+  })
+}
+
+results_prot <- round_results_tables(results_prot)
+results_trans <- round_results_tables(results_trans)
+# results_metabo <- round_results_tables(results_metabo)
+# rownames(annotation_df_prot) <- annotation_df_prot$UNIPROT_ID
+```
 
 ```{r}
 movida_list <- list(
@@ -44,7 +72,9 @@ movida_list <- list(
 ```
 
 
+
+
 ```{r}
-source("FirstIteration.r")
+source("main/app.R")
 MovidaApp(movida_list)
 ```
