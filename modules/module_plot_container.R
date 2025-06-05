@@ -1,7 +1,8 @@
 library(shiny)
 source("functions/plot_expression.R")
+library(shinyFiles)
 # UI function
-mod_plot_ui <- function(id, title = "Plot Module", show_export_data_btn = TRUE, show_export_plot_btn = TRUE) {
+mod_plot_ui <- function(id, title = "Plot Module", show_export_data_btn = TRUE, show_export_plot_btn = TRUE, show_export_code_btn = TRUE) {
   ns <- NS(id)
 
   # btns <- list(
@@ -21,6 +22,9 @@ mod_plot_ui <- function(id, title = "Plot Module", show_export_data_btn = TRUE, 
       },
       if (show_export_plot_btn) {
         actionButton(ns("btn_export_plot"), "Export Plot")
+      },
+      if (show_export_code_btn) {
+        actionButton(ns("btn_export_code"), "Export Code")
       }
     )
   )
@@ -50,7 +54,13 @@ mod_plot_server <- function(id, main_plotting_function, dashboard_elements = NUL
         main_plotting_function()
       }
     })
-
+    # Create the hash of the function for the id.
+    # # Convert the function to a string
+    # func_string <- deparse(my_function)
+    # # Collapse into a single string to avoid line breaks
+    # func_text <- paste(func_string, collapse = "\n")
+    # # Create a hash
+    # hash <- digest(func_text, algo = "sha256")
     output$dashboard_buttons <- renderUI({
       # req(main_plotting_function)
       if (!is.null(dashboard_elements) && !is.null(dashboard_elements$elements[[id]])) {

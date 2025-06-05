@@ -5,7 +5,7 @@ source("modules/module_plot_container.R")
 mod_dashboard_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    h3("Dashboard Module"),
+    # h3("Dashboard Module"),
     uiOutput(ns("grid_ui")) # Dynamic UI for the grid
   )
 }

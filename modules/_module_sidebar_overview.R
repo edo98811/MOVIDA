@@ -53,6 +53,34 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
       }
     })
 
+    plot_heatmap_transcriptomics <- reactive({
+      req(selected_row_source$selected, selected_row_source$source)
+      selected <- selected_row_source$selected
+
+      function() {
+        plot_heatmap_for_transcriptomics(
+          selected,
+          movida_data$get_expression("transcriptomics"),
+          movida_data$get_anno_df("transcriptomics")
+        )
+      }
+    })
+
+    plot_heatmap_proteomics <- reactive({
+      req(selected_row_source$selected, selected_row_source$source)
+      selected <- selected_row_source$selected
+
+      function() {
+        plot_heatmap_for_proteomics(
+          selected,
+          movida_data$get_expression("proteomics"),
+          movida_data$get_anno_df("proteomics")
+        )
+      }
+    })
+
+
+
     # Dynamically render UI
     output$sidebar_ui_module <- renderUI({
       req(transcriptomics_id(), proteomics_id())

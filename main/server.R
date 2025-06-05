@@ -12,6 +12,26 @@ server <- function(input, output, session, movida_data) {
     source = NULL,
     contrast = NULL
   )
+  # Reactive data frame to store and update data dynamically
+  reactive_data <- reactiveVal(data.frame())
+
+  output$selected_feature <- renderUI({
+    if (!is.null(selected_row_source$selected)) {
+      div(
+        style = "background-color: rgba(0, 128, 0, 0.8); height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 20px 20px; color: white;",
+        span(
+          paste("Selected feature:", selected_row_source$selected, "from", selected_row_source$source)
+        ),
+        div(
+          style = "margin-left: auto;",  # Push the button to the right
+          actionButton("add_to_bookmarks", "Add to Bookmarks", style = "background-color: white; color: green; border: none;")
+        ),
+        hr()
+      )
+    } else {
+      NULL  # Return NULL if selected is NULL
+    }
+  })
 
   # Call module servers
   mod_overview_server("overview", dashboard_elements, selected_row_source, movida_data)

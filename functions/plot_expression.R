@@ -1,6 +1,11 @@
 # Boxplot of logCPM values for each group
 library(hrbrthemes)
 library(viridis)
+library(ggplot2)
+library(dplyr)
+library(ggforce)
+library(ggrepel)
+library(SummarizedExperiment)
 
 plot_expression_for_proteomics <- function(entity, se_object, anno_df, use_gene_name = FALSE, count_matrix = NULL) {
   # input protein must be in this case a uniprot id

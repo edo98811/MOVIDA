@@ -1,9 +1,10 @@
 library(shiny)
+library(DT)
 
 # UI function
 mod_table_ui <- function(id, dashboard = FALSE, show_export_data_btn = FALSE, show_export_plot_btn = FALSE) {
   ns <- NS(id)
-  
+
   btns <- list()
   # Add export data button if the flag is set
   if (show_export_data_btn) {
@@ -19,7 +20,6 @@ mod_table_ui <- function(id, dashboard = FALSE, show_export_data_btn = FALSE, sh
 
 # Server function
 mod_table_server <- function(id, main_table_function, selected_row) {
-
   moduleServer(id, function(input, output, session) {
     # Render the data table
     data <- reactive({
@@ -32,7 +32,21 @@ mod_table_server <- function(id, main_table_function, selected_row) {
 
     # Check if 'data' is a data.frame (or tibble)
     output$table <- DT::renderDataTable({
-      return(DT::datatable(data(), selection = "single"))
+      DT::datatable(
+        data(),
+        selection = "single"
+        # extensions = "Buttons",
+        # options = list(
+        #   dom = "Bfrtip",
+        #   buttons = list(
+        #     list(
+        #       extend = "csv",
+        #       text = "Export CSV",
+        #       filename = paste0("data_", Sys.Date())
+        #     )
+        #   )
+        # )
+      )
     })
 
     # Observe the export data button click
@@ -75,16 +89,16 @@ mod_table_server <- function(id, main_table_function, selected_row) {
         )
       ))
     })
-    
+
     observeEvent(input$confirm_plot_export, {
       req(input$plot_file_path)
       removeModal()
-      
+
       tryCatch(
         {
           # Assuming main_plotting_function() returns a ggplot object
           ggsave(filename = input$plot_file_path, plot = main_table_function(), width = 8, height = 6)
-          
+
           showNotification(paste("Plot successfully exported to", input$plot_file_path), type = "message")
         },
         error = function(e) {

@@ -36,12 +36,10 @@ round_results_tables <- function(results_list) {
   lapply(results_list, function(result) {
     lapply(result, function(df) {
       if (is.data.frame(df)) {
-        if (identical(names(df), "topGO_tbl") || identical(names(df), "tbl_res_all")) {
-          df[] <- lapply(df, function(col) {
-            if (is.numeric(col)) round(col, 4) else col
-          })
-        }
-        if (identical(names(df), "tbl_res_all")) {
+        df[] <- lapply(df, function(col) {
+          if (is.numeric(col)) round(col, 4) else col
+        })
+        if ("tbl_res_all" %in% names(result)) {
           df <- df[, !(names(df) %in% c("CI.I", "CI.L"))]
         }
       }
@@ -49,7 +47,6 @@ round_results_tables <- function(results_list) {
     })
   })
 }
-
 results_prot <- round_results_tables(results_prot)
 results_trans <- round_results_tables(results_trans)
 # results_metabo <- round_results_tables(results_metabo)
