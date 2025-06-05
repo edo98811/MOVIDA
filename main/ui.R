@@ -38,6 +38,14 @@ ui <- page_fillable(
           uiOutput("2")
         ),
         nav_panel(
+          title = "Expression or abundance",
+          uiOutput("2")
+        ),
+        nav_panel(
+          title = "Heatmap",
+          uiOutput("2")
+        ),
+        nav_panel(
           title = "From selected data",
           uiOutput("3")
         )

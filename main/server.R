@@ -12,6 +12,7 @@ server <- function(input, output, session, movida_data) {
     source = NULL,
     contrast = NULL
   )
+
   # Reactive data frame to store and update data dynamically
   reactive_data <- reactiveVal(data.frame())
 
@@ -48,10 +49,7 @@ server <- function(input, output, session, movida_data) {
     sidebar_content(TRUE)  # Hide sidebar content when contrast changes (resetting the selection)
   })
 
-  # observeEvent(dashboard_elements$elements, {
-  #   warning("Event triggered main")  # Hide sidebar content when contrast changes (resetting the selection)
-  # })
-
+  # Render the sidebar UI based on the sidebar_content reactive value
   observeEvent(sidebar_content(), {
     output$sidebar_ui <- renderUI({
       if (sidebar_content()) {
