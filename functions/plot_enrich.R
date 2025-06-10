@@ -9,25 +9,6 @@ plot_enrichment_heatmap <- function(pathway, se_trans, annotation_df_trans, only
 
     se <- reactive_values$se_trans
 
-    # This will be eliminated when the input is standardized
-    group_label_map <- c(
-      "ATII" = "AT2",
-      "Finerenon" = "finerenon",
-      "SGLT2I" = "sglt2i",
-      "ATII_Finerenon" = "AT2finerenon",
-      "ATII_SGLT2I" = "AT2sglt2i",
-      "ctrl" = "ctrl"
-    )
-
-    if (only_selected_contrast == TRUE) {
-      s <- input$selected_contrast
-      parts <- strsplit(s, "_vs_")[[1]]
-      group1_label <- group_label_map[[parts[1]]]
-      group2_label <- group_label_map[[parts[2]]]
-
-      se <- se[, colData(se)$group %in% c(group1_label, group2_label)]
-    }
-
     thisset_members_ids <- annotation_df_trans$ensembl_gene_id[match(g_split, annotation_df_trans$SYMBOL)]
     order <- rownames(colData(se)[order(colData(se)$group, decreasing = FALSE), ])
     order_numbers <- match(order, rownames(colData(se)))

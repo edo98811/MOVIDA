@@ -17,4 +17,5 @@ MovidaApp <- function(movida_list) {
   }
   
   shinyApp(ui = ui, server = server_wrapper)
+  # shiny::runApp(list(ui = ui, server = server_wrapper), display.mode="showcase")
 }

@@ -1,4 +1,5 @@
 library(R6)
+source("utils/create_annotations.R")
 
 MovidaModel <- R6Class("MovidaModel",
   private = list(
@@ -12,28 +13,17 @@ MovidaModel <- R6Class("MovidaModel",
     se_trans = NULL,
     se_metabo = NULL,
     metadata = NULL,
-    contrasts = NULL
-  ),
+    contrasts = NULL, 
+  chebi_relationships = function(se_metabo, se_uniprot, get_ensembl = FALSE, get_uniprot = TRUE) {
+    build_chebi_relationships(rowData(se_metabo), rowData(se_uniprot), get_ensembl = FALSE, get_uniprot = TRUE)
+  },
+  uniprot_to_ensembl( = function(se_uniprot, se_trans) {
+    build_uniprot_to_ensembl(rowData(se_uniprot), rowData(se_trans))
+  }
 
   public = list(
     initialize = function(movida_list) {
-      if (!"contrasts" %in% names(movida_list)) {
-      private$contrasts <- intersect(          
-          names(movida_list$results_prot), 
-          names(movida_list$results_trans)
-        # intersect(Reduce(intersect, list(
-        #   names(movida_list$results_prot), 
-        #   names(movida_list$results_trans), 
-        #   names(movida_list$results_metabo)
-        # ))
-      )
-        warning("Contrasts not provided in movida_list. Using intersection of names from results_prot, results_trans, and results_metabo.")
-      } else {
-        private$contrasts <- movida_list$contrasts
-      }
-      private$annotation_df_prot <- movida_list$annotation_df_prot
-      private$annotation_df_trans <- movida_list$annotation_df_trans
-      private$annotation_df_metabo <- movida_list$annotation_df_metabo
+      # Initialize private variables with data from the provided movida_list
       private$results_prot <- movida_list$results_prot
       private$results_trans <- movida_list$results_trans
       private$results_metabo <- movida_list$results_metabo
@@ -41,6 +31,39 @@ MovidaModel <- R6Class("MovidaModel",
       private$se_trans <- movida_list$se_trans
       private$se_metabo <- movida_list$se_metabo
       private$metadata <- movida_list$metadata
+      
+      # Determine contrasts: use provided contrasts or compute intersection of result names
+      if (!"contrasts" %in% names(movida_list)) {
+        private$contrasts <- intersect(          
+          names(movida_list$results_prot), 
+          names(movida_list$results_trans)
+          # Uncomment the following block to include metabolomics in the intersection
+          # intersect(Reduce(intersect, list(
+          #   names(movida_list$results_prot), 
+          #   names(movida_list$results_trans), 
+          #   names(movida_list$results_metabo)
+          # ))
+        )
+        warning("Contrasts not provided in movida_list. Using intersection of names from results_prot, results_trans, and results_metabo.")
+      } else {
+        private$contrasts <- movida_list$contrasts
+      }
+
+      # Build ChEBI relationships if metabolomics data is available
+      if (!is.null(private$se_metabo)) {
+        if (is.null(private$se_prot)) {
+          # If proteomics data is missing, build ChEBI relationships with ensembl IDs
+          private$chebi_relationships_dataframe <- private$chebi_relationships(private$se_metabo, private$se_prot, get_ensembl = TRUE, get_uniprot = FALSE)
+        } else if (is.null(private$se_trans)) {
+          # If transcriptomics data is missing, build ChEBI relationships with default settings
+          private$chebi_relationships_dataframe <- private$chebi_relationships(private$se_metabo, private$se_prot)
+        }
+      }
+
+      # Build UniProt-to-Ensembl relationships if both proteomics and transcriptomics data are available
+      if (!is.null(private$se_prot) && !is.null(private$se_trans)) {
+        private$uniprot_to_ensembl_dataframe <- private$uniprot_relationships(private$se_prot, private$se_trans)
+      }
     },
     get_contrasts = function() {
       return(private$contrasts)

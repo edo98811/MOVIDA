@@ -1,0 +1,10 @@
+library(MOVIDA)
+movida_data <- MOVIDA::movida_data(movida_list)
+
+ source <- 'prot'
+selected <- 'fafasdf' 
+
+
+    plot_expression_for_transcriptomics(selected, movida_data$get_expression("transcriptomics"), 
+        movida_data$get_anno_df("transcriptomics"), use_gene_name = (source == 
+            "transcriptomics"))

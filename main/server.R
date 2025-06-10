@@ -14,7 +14,7 @@ server <- function(input, output, session, movida_data) {
   )
 
   # Reactive data frame to store and update data dynamically
-  reactive_data <- reactiveVal(data.frame())
+  bookmarked_features <- reactiveVal(data.frame())
 
   output$selected_feature <- renderUI({
     if (!is.null(selected_row_source$selected)) {

@@ -9,7 +9,6 @@ mod_dashboard_ui <- function(id) {
     uiOutput(ns("grid_ui")) # Dynamic UI for the grid
   )
 }
-
 mod_dashboard_server <- function(id, dashboard_elements, movida_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -29,15 +28,22 @@ mod_dashboard_server <- function(id, dashboard_elements, movida_data) {
       ))
     })
 
+    initialized <- reactiveVal(character())
+    
     # Dynamically call module servers whenever dashboard_elements changes
     observeEvent(dashboard_elements$elements, {
       elements <- dashboard_elements$elements
+      current <- names(elements)
+      done <- initialized()
 
-      lapply(names(elements), function(el_name) {
+      new_modules <- setdiff(current, done)
+
+      lapply(new_modules, function(el_name) {
         el_fun <- elements[[el_name]]
-        message("created dashboard module server for: ", el_name)
+        message("Creating new module server for: ", el_name)
         mod_plot_server(
           id = el_name,
+          plot_id = el_name,
           main_plotting_function = el_fun,
           dashboard_elements = dashboard_elements
         )

@@ -31,14 +31,19 @@ mod_overview_ui <- function(id) {
       )
     ),
     nav_spacer(),
-    nav_item(div(
-      style = "align-items: start; padding: 0 10px;",
-      "Select Contrast: "
-    )),
-    nav_item(div(
-      style = " align-items: end; align-items: center;  width: 100%;",
-      selectInput(ns("contrast_selector"), NULL, choices = NULL)
-    ))
+    nav_item(
+      div(
+        style = "display: flex; align-items: center; padding: 0 10px;",
+        div(
+          style = "margin-right: 10px;",
+          "Select Contrast:"
+        ),
+        div(
+          style = "flex-grow: 1;",
+          selectInput(ns("contrast_selector"), NULL, choices = NULL, width = "100%")
+        )
+      )
+    )
   )
 }
 
