@@ -14,6 +14,6 @@ human_genes <- unique(unlist(lapply(enzymes, function(e) {
 })))
 
 # Translate to UniProt
-uniprot_ids <- unlist(lapply(human_genes, function(g) {
+UNIPROTs <- unlist(lapply(human_genes, function(g) {
   keggConv("uniprot", g)
 }))

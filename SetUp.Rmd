@@ -21,7 +21,7 @@ se_trans <- readRDS("/Users/edoardofilippi/Development/Projects/MOVIDA/Example_d
 # se_trans <- NULL
 
 results_metabo <- NULL
-se_metabo <- NULL
+se_metabo <- readRDS("/Users/edoardofilippi/Development/Projects/MOVIDA/Example_data/Metabolomics/se.rds")
 
 metadata <- data.frame(readxl::read_excel("/Users/edoardofilippi/Development/Projects/BasicApp/Transcriptomics_limma/samplesDesign_paul_AT2full.xlsx"))
 rownames(metadata) <- metadata$sample_id
@@ -48,9 +48,30 @@ rownames(metadata) <- metadata$sample_id
     }
 ```
 
+```{r, eval = F}
+    # Still need to make a function to map the same proteomics data to tehe same transcriptmics data 
+    group_label_map <- c(
+      "ATII" = "AT2",
+      "Finerenon" = "finerenon",
+      "SGLT2I" = "sglt2i",
+      "ATII_Finerenon" = "AT2finerenon",
+      "ATII_SGLT2I" = "AT2sglt2i",
+      "ctrl" = "ctrl"
+    )
+
+    if (only_selected_contrast == TRUE) {
+      s <- input$selected_contrast
+      parts <- strsplit(s, "_vs_")[[1]]
+      group1_label <- group_label_map[[parts[1]]]
+      group2_label <- group_label_map[[parts[2]]]
+
+      se <- se[, colData(se)$group %in% c(group1_label, group2_label)]
+    }
+```
+
 ```{r}
-colnames(annotation_df_trans) <- c("UNIPROT_ID", "SYMBOL", "ENSEMBL_ID")
-colnames(annotation_df_prot) <- c("UNIPROT_ID", "SYMBOL", "ENSEMBL_ID")
+colnames(annotation_df_trans) <- c("UNIPROT", "SYMBOL", "ENSEMBL_ID")
+colnames(annotation_df_prot) <- c("UNIPROT", "SYMBOL", "ENSEMBL_ID")
 
 round_results_tables <- function(results_list) {
   lapply(results_list, function(result) {
@@ -70,7 +91,7 @@ round_results_tables <- function(results_list) {
 results_prot <- round_results_tables(results_prot)
 results_trans <- round_results_tables(results_trans)
 # results_metabo <- round_results_tables(results_metabo)
-# rownames(annotation_df_prot) <- annotation_df_prot$UNIPROT_ID
+# rownames(annotation_df_prot) <- annotation_df_prot$UNIPROT
 ```
 
 ```{r, eval = F}
@@ -98,8 +119,8 @@ movida_list <- list(
 ```
 
 ```{r}
-# annotation_df_prot <- annotation_df_prot[!duplicated(annotation_df_prot$UNIPROT_ID), ]
-# rownames(annotation_df_prot) <- annotation_df_prot$UNIPROT_ID
+# annotation_df_prot <- annotation_df_prot[!duplicated(annotation_df_prot$UNIPROT), ]
+# rownames(annotation_df_prot) <- annotation_df_prot$UNIPROT
 # 
 # stopifnot(all(rownames(annotation_df_prot) %in% rownames(se_prot)))
 # stopifnot(all(rownames(annotation_df_trans) %in% rownames(se_trans)))
@@ -108,20 +129,28 @@ movida_list <- list(
 # rowData(se_trans) <- annotation_df_trans
 ```
 
+```{r prepare-metabo}
+source("helper_functions_external/to_chebi.R")
+
+rowData(se_metabo)$CHEBI <- get_chebi_id_from_inchikey(rownames(rowData(se_metabo)))
+rownames(rowData(se_metabo)) <- rowData(se_metabo)$CHEBI
+
+```
+
 ```{r}
 movida_list <- list(
     results_prot = results_prot,
     results_trans = results_trans,
-    results_metabo = results_metabo,
+    results_metabo = NULL,
     se_prot = se_prot,
     se_trans = se_trans,
-    se_metabo = se_trans,
+    se_metabo = NULL,
     organism = "Mm"
 )
 ```
 
-```{r}
-source("main/data_model")
+```{r test movida-data}
+source("main/data_model.R")
   assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
 ```
 
