@@ -26,7 +26,8 @@ se_metabo <- NULL
 metadata <- data.frame(readxl::read_excel("/Users/edoardofilippi/Development/Projects/BasicApp/Transcriptomics_limma/samplesDesign_paul_AT2full.xlsx"))
 rownames(metadata) <- metadata$sample_id
 ```
-```{r}
+
+```{r, eval = F}
     # Still need to make a function to map the same proteomics data to tehe same transcriptmics data 
     group_label_map <- c(
       "ATII" = "AT2",
@@ -46,6 +47,7 @@ rownames(metadata) <- metadata$sample_id
       se <- se[, colData(se)$group %in% c(group1_label, group2_label)]
     }
 ```
+
 ```{r}
 colnames(annotation_df_trans) <- c("UNIPROT_ID", "SYMBOL", "ENSEMBL_ID")
 colnames(annotation_df_prot) <- c("UNIPROT_ID", "SYMBOL", "ENSEMBL_ID")
@@ -96,11 +98,14 @@ movida_list <- list(
 ```
 
 ```{r}
-stopifnot(all(rownames(annotation_df_prot) %in% rownames(se_prot)))
-stopifnot(all(rownames(annotation_df_trans) %in% rownames(se_trans)))
+# annotation_df_prot <- annotation_df_prot[!duplicated(annotation_df_prot$UNIPROT_ID), ]
+# rownames(annotation_df_prot) <- annotation_df_prot$UNIPROT_ID
+# 
+# stopifnot(all(rownames(annotation_df_prot) %in% rownames(se_prot)))
+# stopifnot(all(rownames(annotation_df_trans) %in% rownames(se_trans)))
 
-rowData(se_prot) <- annotation_df_prot
-rowData(se_trans) <- annotation_df_trans
+# rowData(se_prot) <- annotation_df_prot
+# rowData(se_trans) <- annotation_df_trans
 ```
 
 ```{r}
@@ -110,10 +115,15 @@ movida_list <- list(
     results_metabo = results_metabo,
     se_prot = se_prot,
     se_trans = se_trans,
-    se_metabo = se_trans
+    se_metabo = se_trans,
+    organism = "Mm"
 )
 ```
 
+```{r}
+source("main/data_model")
+  assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
+```
 
 ```{r}
 source("main/app.R")

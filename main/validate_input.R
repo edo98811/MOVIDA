@@ -21,3 +21,28 @@ check_uniprot <- function(se) {
   }
   return(TRUE)
 }
+
+# Function to check if the organism is either 'hs' or 'Mm'
+check_organism <- function(organism) {
+  if (!organism %in% c("Hs", "Mm")) {
+    stop("Error: organism must be either 'Hs' (Homo sapiens) or 'Mm' (Mus musculus).")
+  }
+  return(TRUE)
+}
+
+# Function to check if movida_list contains the required elements
+check_movida_list <- function(movida_list) {
+  required_elements <- c(
+    "results_prot", "results_trans", "results_metabo",
+    "se_prot", "se_trans", "se_metabo", "organism"
+  )
+  
+  missing_elements <- setdiff(required_elements, names(movida_list))
+  
+  if (length(missing_elements) > 0) {
+    stop(paste("Error: movida_list is missing the following elements:", 
+               paste(missing_elements, collapse = ", ")))
+  }
+  
+  return(TRUE)
+}

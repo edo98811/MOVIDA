@@ -1,5 +1,6 @@
 library(R6)
 source("utils/create_annotations.R")
+source("main/validate_input.R")
 
 MovidaModel <- R6Class("MovidaModel",
   private = list(
@@ -12,17 +13,21 @@ MovidaModel <- R6Class("MovidaModel",
     se_prot = NULL,
     se_trans = NULL,
     se_metabo = NULL,
-    metadata = NULL,
-    contrasts = NULL, 
-  chebi_relationships = function(se_metabo, se_uniprot, get_ensembl = FALSE, get_uniprot = TRUE) {
-    build_chebi_relationships(rowData(se_metabo), rowData(se_uniprot), get_ensembl = FALSE, get_uniprot = TRUE)
-  },
-  uniprot_to_ensembl( = function(se_uniprot, se_trans) {
-    build_uniprot_to_ensembl(rowData(se_uniprot), rowData(se_trans))
-  }
-
+    contrasts = NULL,
+    chebi_relationships_dataframe = NULL,
+    uniprot_to_ensembl_dataframe = NULL,
+    organism = NULL,
+    chebi_relationships = function(se_metabo, se_uniprot, get_ensembl = FALSE, get_uniprot = TRUE) {
+      build_chebi_relationships(rowData(se_metabo), rowData(se_uniprot), get_ensembl = FALSE, get_uniprot = TRUE)
+    },
+    uniprot_relationships = function(se_uniprot, se_trans, organism) {
+      build_uniprot_to_ensembl(rowData(se_uniprot), rowData(se_trans), organism)
+    }
+  ),
   public = list(
     initialize = function(movida_list) {
+
+      check_movida_list(movida_list)
       # Initialize private variables with data from the provided movida_list
       private$results_prot <- movida_list$results_prot
       private$results_trans <- movida_list$results_trans
@@ -30,17 +35,17 @@ MovidaModel <- R6Class("MovidaModel",
       private$se_prot <- movida_list$se_prot
       private$se_trans <- movida_list$se_trans
       private$se_metabo <- movida_list$se_metabo
-      private$metadata <- movida_list$metadata
-      
+      private$organism <- if(check_organism(movida_list$organism)) movida_list$organism else stop("Invalid organism provided in movida_list.")
+
       # Determine contrasts: use provided contrasts or compute intersection of result names
       if (!"contrasts" %in% names(movida_list)) {
-        private$contrasts <- intersect(          
-          names(movida_list$results_prot), 
+        private$contrasts <- intersect(
+          names(movida_list$results_prot),
           names(movida_list$results_trans)
           # Uncomment the following block to include metabolomics in the intersection
           # intersect(Reduce(intersect, list(
-          #   names(movida_list$results_prot), 
-          #   names(movida_list$results_trans), 
+          #   names(movida_list$results_prot),
+          #   names(movida_list$results_trans),
           #   names(movida_list$results_metabo)
           # ))
         )
@@ -56,13 +61,13 @@ MovidaModel <- R6Class("MovidaModel",
           private$chebi_relationships_dataframe <- private$chebi_relationships(private$se_metabo, private$se_prot, get_ensembl = TRUE, get_uniprot = FALSE)
         } else if (is.null(private$se_trans)) {
           # If transcriptomics data is missing, build ChEBI relationships with default settings
-          private$chebi_relationships_dataframe <- private$chebi_relationships(private$se_metabo, private$se_prot)
+          private$chebi_relationships_dataframe <- private$chebi_relationships(private$se_metabo, private$se_prot, get_ensembl = FALSE, get_uniprot = TRUE)
         }
       }
 
       # Build UniProt-to-Ensembl relationships if both proteomics and transcriptomics data are available
       if (!is.null(private$se_prot) && !is.null(private$se_trans)) {
-        private$uniprot_to_ensembl_dataframe <- private$uniprot_relationships(private$se_prot, private$se_trans)
+        private$uniprot_to_ensembl_dataframe <- private$uniprot_relationships(private$se_prot, private$se_trans, organism = private$organism)
       }
     },
     get_contrasts = function() {
@@ -97,7 +102,6 @@ MovidaModel <- R6Class("MovidaModel",
       }
       return(data)
     },
-
     get_enrichment = function(type, contrast, FDRpvalue = NULL, FDRadj = NULL) {
       if (!is.character(type) || length(type) != 1) {
         stop("Argument 'type' must be a single string.")
@@ -130,9 +134,7 @@ MovidaModel <- R6Class("MovidaModel",
       }
       return(data)
     },
-
     get_expression = function(type, return_se = FALSE) {
-
       if (!is.character(type) || length(type) != 1) {
         stop("Argument 'type' must be a single string.")
       }
@@ -147,11 +149,13 @@ MovidaModel <- R6Class("MovidaModel",
         stop("Invalid type. Must be one of 'prot', 'trans', or 'metabo'.")
       }
 
-      if (return_se) return(assay(se))
-      else return(se)
+      if (return_se) {
+        return(assay(se))
+      } else {
+        return(se)
+      }
     },
     get_anno_df = function(type) {
-
       if (!is.character(type) || length(type) != 1) {
         stop("Argument 'type' must be a single string.")
       }
@@ -173,7 +177,7 @@ MovidaModel <- R6Class("MovidaModel",
 
 MovidaModelSingleton <- local({
   instance <- NULL
-  
+
   list(
     get_instance = function(movida_list = NULL) {
       if (is.null(instance)) {
