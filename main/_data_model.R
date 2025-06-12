@@ -1,12 +1,83 @@
+#' @title MovidaModel Class
+#' @description An R6 class for managing and analyzing multi-omics data.
+#' @details The `MovidaModel` class provides methods for initializing, processing,
+#' and retrieving relationships and data from proteomics, transcriptomics,
+#' and metabolomics experiments. It supports parallel processing and
+#' includes functionality for filtering and retrieving data based on
+#' specific criteria.
+#'
+#' @section Private Fields:
+#' \describe{
+#'   \item{results_prot}{Results from proteomics analysis.}
+#'   \item{results_trans}{Results from transcriptomics analysis.}
+#'   \item{results_metabo}{Results from metabolomics analysis.}
+#'   \item{se_prot}{SummarizedExperiment object for proteomics data.}
+#'   \item{se_trans}{SummarizedExperiment object for transcriptomics data.}
+#'   \item{se_metabo}{SummarizedExperiment object for metabolomics data.}
+#'   \item{contrasts}{List of contrasts used in the analysis.}
+#'   \item{inchi_to_ensembl}{Relationships between InChI and Ensembl IDs.}
+#'   \item{inchi_to_uniprot}{Relationships between InChI and UniProt IDs.}
+#'   \item{uniprot_to_ensembl}{Relationships between UniProt and Ensembl IDs.}
+#'   \item{organism}{Organism information for the data.}
+#'   \item{determine_contrasts}{Function to determine contrasts from the input data.}
+#' }
+#'
+#' @section Public Methods:
+#' The class provides a suite of methods for interacting with the data model.
+#'
+#' - `initialize(movida_list)`: Initializes the object with input data for proteomics, transcriptomics,
+#'   and metabolomics, along with associated differential analysis and enrichment results.
+#'
+#' - `build_relationships()`: Constructs feature mappings between omics layers using InChI, UniProt,
+#'   and Ensembl identifiers, with support for parallel processing.
+#'
+#' - `load_relationships(folder_path)`: Loads previously saved relationship data from disk.
+#'
+#' - `save_relationships(folder_path)`: Saves current feature relationship data to disk for reuse.
+#'
+#' - `get_contrasts()`: Returns a list of available contrasts (comparisons) in the analysis.
+#'
+#' - `get_dea(target, contrast, FDRpvalue = NULL, FDRadj = NULL)`: Retrieves differential expression results
+#'   for the given data target and contrast, with optional FDR-based filtering.
+#'
+#' - `get_fea(target, contrast, FDRpvalue = NULL, FDRadj = NULL)`: Retrieves functional enrichment analysis results
+#'   for the specified target and contrast, with optional filtering.
+#'
+#' - `get_values_all(target, return_se = FALSE)`: Returns all assay data (or `SummarizedExperiment` object)
+#'   for the selected data target.
+#'
+#' - `get_values_features(features, source = NULL)`: Retrieves expression data for specific features.
+#'
+#' - `get_values_group(groups, source)`: Returns data for specified experimental groups.
+#'
+#' - `get_values_samples(samples, source)`: Returns data for specific sample IDs.
+#'
+#' - `get_related_features(feature, target)`: Maps a feature identifier (e.g., InChI, UniProt, Ensembl)
+#'   to its related identifiers in other omics layers.
+#'
+#' - `get_inchi_to_ensembl()`, `get_inchi_to_uniprot()`, `get_uniprot_to_ensembl()`: Accessors for relationship mappings
+#'   generated during the `build_relationships()` phase.
+#'
+#'
+#' @examples
+#' # Example usage:
+#' movida_list <- list(
+#'   results_prot = list(),
+#'   results_trans = list(),
+#'   results_metabo = list(),
+#'   se_prot = NULL,
+#'   se_trans = NULL,
+#'   se_metabo = NULL,
+#'   organism = "Hs"
+#' )
+#' model <- MovidaModel$new(movida_list)
+#'
 library(R6)
-source("utils/create_annotations.R")
-source("utils/validate_input.R")
+source("utils/utils_find_relationships.R")
+source("utils/utils_validate_input.R")
 
 MovidaModel <- R6Class("MovidaModel",
   private = list(
-    annotation_df_prot = NULL,
-    annotation_df_trans = NULL,
-    annotation_df_metabo = NULL,
     results_prot = NULL,
     results_trans = NULL,
     results_metabo = NULL,
@@ -43,7 +114,7 @@ MovidaModel <- R6Class("MovidaModel",
       private$se_prot <- movida_list$se_prot
       private$se_trans <- movida_list$se_trans
       private$se_metabo <- movida_list$se_metabo
-      private$organism <- if (check_organism(movida_list$organism)) movida_list$organism else stop("Invalid organism provided in movida_list.")
+      private$organism <- movida_list$organism
       self$build_relationships()
       private$determine_contrasts(movida_list)
     },
@@ -58,43 +129,45 @@ MovidaModel <- R6Class("MovidaModel",
       # Build inchi relationships if metabolomics data is available
       if (!is.null(private$se_metabo)) {
         # Build inchi to Ensembl relationships
+        message("Creating relationships dataset inchi_to_uniprot...")
         if (!is.null(private$se_prot)) {
-          private$inchi_to_ensembl <- inchi_relationships(
-            private$se_metabo, private$se_prot,
-            get_ensembl = FALSE, get_uniprot = TRUE
-          )
+          private$inchi_to_ensembl <- build_inchi_relationships(rowData(private$se_metabo), rowData(private$se_prot), get_ensembl = FALSE, get_uniprot = TRUE)
         }
+        message("Done!")
+
         # Build inchi to UniProt relationships
+        message("Creating relationships dataset inchi_to_ensembl...")
         if (!is.null(private$se_trans)) {
-          private$inchi_to_uniprot <- inchi_relationships(
-            private$se_metabo, private$se_prot,
-            get_ensembl = TRUE, get_uniprot = FALSE
-          )
+          private$inchi_to_uniprot <- build_inchi_relationships(rowData(private$se_metabo), rowData(private$se_trans), get_ensembl = TRUE, get_uniprot = FALSE)
         }
+        message("Done!")
       }
 
       # Build UniProt-to-Ensembl relationships if both proteomics and transcriptomics data are available
       if (!is.null(private$se_prot) && !is.null(private$se_trans)) {
-        private$uniprot_to_ensembl <- uniprot_relationships(
-          private$se_prot, private$se_trans,
-          organism = private$organism
-        )
+        private$uniprot_to_ensembl <- build_uniprot_to_ensembl(rowData(private$se_prot), rowData(private$se_trans), private$organism)
       }
     },
     load_relationships = function(folder_path) {
-      if (!dir.exists(folder_path)) {
-      stop("The specified folder does not exist.")
+      if (!is.character(folder_path) || length(folder_path) != 1) {
+        stop("Argument 'folder_path' must be a single string.")
       }
-      
+      if (!dir.exists(folder_path)) {
+        stop("The specified folder does not exist.")
+      }
+
       private$inchi_to_ensembl <- readRDS(file.path(folder_path, "inchi_to_ensembl.rds"))
       private$inchi_to_uniprot <- readRDS(file.path(folder_path, "inchi_to_uniprot.rds"))
       private$uniprot_to_ensembl <- readRDS(file.path(folder_path, "uniprot_to_ensembl.rds"))
     },
     save_relationships = function(folder_path) {
-      if (!dir.exists(folder_path)) {
-      dir.create(folder_path, recursive = TRUE)
+      if (!is.character(folder_path) || length(folder_path) != 1) {
+        stop("Argument 'folder_path' must be a single string.")
       }
-      
+      if (!dir.exists(folder_path)) {
+        dir.create(folder_path, recursive = TRUE)
+      }
+
       saveRDS(private$inchi_to_ensembl, file.path(folder_path, "inchi_to_ensembl.rds"))
       saveRDS(private$inchi_to_uniprot, file.path(folder_path, "inchi_to_uniprot.rds"))
       saveRDS(private$uniprot_to_ensembl, file.path(folder_path, "uniprot_to_ensembl.rds"))
@@ -111,89 +184,89 @@ MovidaModel <- R6Class("MovidaModel",
     get_uniprot_to_ensembl = function() {
       return(private$uniprot_to_ensembl)
     },
-    get_dea = function(type, contrast, FDRpvalue = NULL, FDRadj = NULL) {
-      if (!is.character(type) || length(type) != 1) {
-        stop("Argument 'type' must be a single string.")
+    get_dea = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
+      if (!is.character(source) || length(source) != 1) {
+      stop("Argument 'source' must be a single string.")
       }
       if (!is.character(contrast) || length(contrast) != 1) {
-        stop("Argument 'contrast' must be a single string.")
+      stop("Argument 'contrast' must be a single string.")
       }
 
-      if (type == "proteomics") {
-        data <- private$results_prot[[contrast]]$tbl_res_all
-      } else if (type == "transcriptomics") {
-        data <- private$results_trans[[contrast]]$tbl_res_all
-      } else if (type == "metabolomics") {
-        data <- private$results_metabo[[contrast]]$tbl_res_all
+      if (source == "proteomics") {
+      data <- private$results_prot[[contrast]]$tbl_res_all
+      } else if (source == "transcriptomics") {
+      data <- private$results_trans[[contrast]]$tbl_res_all
+      } else if (source == "metabolomics") {
+      data <- private$results_metabo[[contrast]]$tbl_res_all
       } else {
-        stop("Invalid type. Must be one of 'prot', 'trans', or 'metabo'.")
+      stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
 
       if (!is.null(FDRpvalue)) {
-        data <- data[data$FDRpvalue <= FDRpvalue, ]
+      data <- data[data$FDRpvalue <= FDRpvalue, ]
       }
       if (!is.null(FDRadj)) {
-        data <- data[data$FDRadj <= FDRadj, ]
-        if (!is.null(FDRpvalue)) {
-          warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on both criteria.")
-        }
+      data <- data[data$FDRadj <= FDRadj, ]
+      if (!is.null(FDRpvalue)) {
+        warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on both criteria.")
+      }
       }
       return(data)
     },
-    get_fea = function(type, contrast, FDRpvalue = NULL, FDRadj = NULL) {
-      if (!is.character(type) || length(type) != 1) {
-        stop("Argument 'type' must be a single string.")
+    get_fea = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
+      if (!is.character(source) || length(source) != 1) {
+      stop("Argument 'source' must be a single string.")
       }
       if (!is.character(contrast) || length(contrast) != 1) {
-        stop("Argument 'contrast' must be a single string.")
+      stop("Argument 'contrast' must be a single string.")
       }
 
-      if (type == "proteomics") {
-        data <- private$results_prot[[contrast]]$topGO_tbl
-      } else if (type == "transcriptomics") {
-        data <- private$results_trans[[contrast]]$topGO_tbl
-      } else if (type == "metabolomics") {
-        data <- private$results_metabo[[contrast]]$topGO_tbl
+      if (source == "proteomics") {
+      data <- private$results_prot[[contrast]]$topGO_tbl
+      } else if (source == "transcriptomics") {
+      data <- private$results_trans[[contrast]]$topGO_tbl
+      } else if (source == "metabolomics") {
+      data <- private$results_metabo[[contrast]]$topGO_tbl
       } else {
-        stop("Invalid type. Must be one of 'prot', 'trans', or 'metabo'.")
+      stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
 
       if (!is.null(FDRpvalue)) {
-        data <- data[data$FDRpvalue <= FDRpvalue, ]
+      data <- data[data$FDRpvalue <= FDRpvalue, ]
       }
       if (!is.null(FDRadj)) {
-        data <- data[data$FDRadj <= FDRadj, ]
-        if (!is.null(FDRpvalue)) {
-          warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on FDRadj")
-        }
+      data <- data[data$FDRadj <= FDRadj, ]
+      if (!is.null(FDRpvalue)) {
+        warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on FDRadj")
+      }
       }
       if (!is.data.frame(data)) {
-        stop("The filtered data is not a data frame. Please check the input data structure.")
+      stop("The filtered data is not a data frame. Please check the input data structure.")
       }
       return(data)
     },
-    get_values_all = function(type, return_se = FALSE) {
-      # Validate that 'type' is a single string
-      if (!is.character(type) || length(type) != 1) {
-        stop("Argument 'type' must be a single string.")
+    get_values_all = function(source, return_se = FALSE) {
+      # Validate that 'source' is a single string
+      if (!is.character(source) || length(source) != 1) {
+      stop("Argument 'source' must be a single string.")
       }
 
-      # Select the appropriate SummarizedExperiment object based on the type
-      if (type == "proteomics") {
-        se <- private$se_prot
-      } else if (type == "transcriptomics") {
-        se <- private$se_trans
-      } else if (type == "metabolomics") {
-        se <- private$se_metabo
+      # Select the appropriate SummarizedExperiment object based on the source
+      if (source == "proteomics") {
+      se <- private$se_prot
+      } else if (source == "transcriptomics") {
+      se <- private$se_trans
+      } else if (source == "metabolomics") {
+      se <- private$se_metabo
       } else {
-        stop("Invalid type. Must be one of 'prot', 'trans', or 'metabo'.")
+      stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
 
       # Return the assay data or the SummarizedExperiment object based on 'return_se'
       if (return_se) {
-        return(assay(se)) # Return the assay data (matrix of values)
+      return(assay(se)) # Return the assay data (matrix of values)
       } else {
-        return(se) # Return the SummarizedExperiment object
+      return(se) # Return the SummarizedExperiment object
       }
     },
     get_related_features = function(feature, target) {
@@ -206,9 +279,9 @@ MovidaModel <- R6Class("MovidaModel",
         stop("Error: rownames(rowData(se)) must be of type Ensembl, inchi, or UniProt.")
       }
 
-      # Check if 'type' is a single string
-      if (!is.character(type) || length(type) != 1) {
-        stop("Argument 'type' must be a single string.")
+      # Check if 'target' is a single string
+      if (!is.character(target) || length(target) != 1) {
+        stop("Argument 'target' must be a single string.")
       }
 
       # Return the related features based on the target type

@@ -1,5 +1,5 @@
 # test get inchi key
-source("utils/create_annotations.R")
+source("utils/find_relationships.R")
 query_result <- uniprot_inchi_query("WQZGKKKJIJFFOK-GASJEMHNSA-N", get_ensembl = TRUE, get_uniprot = TRUE)
 
 

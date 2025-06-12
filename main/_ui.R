@@ -2,9 +2,9 @@ library(shiny)
 library(bslib)
 library(gargoyle)
 
-source("modules/_module_dashboard.R")
-source("modules/_module_overview.R")
-source("modules/_module_sidebar_overview.R")
+source("modules/module_dashboard.R")
+source("modules/module_overview.R")
+source("modules/module_sidebar_overview.R")
 
 ui <- page_fillable(
   title = "MOVIDApp",

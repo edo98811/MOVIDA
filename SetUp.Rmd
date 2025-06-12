@@ -28,50 +28,50 @@ rownames(metadata) <- metadata$sample_id
 ```
 
 ```{r, eval = F}
-    # Still need to make a function to map the same proteomics data to tehe same transcriptmics data 
-    group_label_map <- c(
-      "ATII" = "AT2",
-      "Finerenon" = "finerenon",
-      "SGLT2I" = "sglt2i",
-      "ATII_Finerenon" = "AT2finerenon",
-      "ATII_SGLT2I" = "AT2sglt2i",
-      "ctrl" = "ctrl"
-    )
+# Still need to make a function to map the same proteomics data to tehe same transcriptmics data
+group_label_map <- c(
+  "ATII" = "AT2",
+  "Finerenon" = "finerenon",
+  "SGLT2I" = "sglt2i",
+  "ATII_Finerenon" = "AT2finerenon",
+  "ATII_SGLT2I" = "AT2sglt2i",
+  "ctrl" = "ctrl"
+)
 
-    if (only_selected_contrast == TRUE) {
-      s <- input$selected_contrast
-      parts <- strsplit(s, "_vs_")[[1]]
-      group1_label <- group_label_map[[parts[1]]]
-      group2_label <- group_label_map[[parts[2]]]
+if (only_selected_contrast == TRUE) {
+  s <- input$selected_contrast
+  parts <- strsplit(s, "_vs_")[[1]]
+  group1_label <- group_label_map[[parts[1]]]
+  group2_label <- group_label_map[[parts[2]]]
 
-      se <- se[, colData(se)$group %in% c(group1_label, group2_label)]
-    }
+  se <- se[, colData(se)$group %in% c(group1_label, group2_label)]
+}
 ```
 
 ```{r, eval = F}
-    # Still need to make a function to map the same proteomics data to tehe same transcriptmics data 
-    group_label_map <- c(
-      "ATII" = "AT2",
-      "Finerenon" = "finerenon",
-      "SGLT2I" = "sglt2i",
-      "ATII_Finerenon" = "AT2finerenon",
-      "ATII_SGLT2I" = "AT2sglt2i",
-      "ctrl" = "ctrl"
-    )
+# Still need to make a function to map the same proteomics data to tehe same transcriptmics data
+group_label_map <- c(
+  "ATII" = "AT2",
+  "Finerenon" = "finerenon",
+  "SGLT2I" = "sglt2i",
+  "ATII_Finerenon" = "AT2finerenon",
+  "ATII_SGLT2I" = "AT2sglt2i",
+  "ctrl" = "ctrl"
+)
 
-    if (only_selected_contrast == TRUE) {
-      s <- input$selected_contrast
-      parts <- strsplit(s, "_vs_")[[1]]
-      group1_label <- group_label_map[[parts[1]]]
-      group2_label <- group_label_map[[parts[2]]]
+if (only_selected_contrast == TRUE) {
+  s <- input$selected_contrast
+  parts <- strsplit(s, "_vs_")[[1]]
+  group1_label <- group_label_map[[parts[1]]]
+  group2_label <- group_label_map[[parts[2]]]
 
-      se <- se[, colData(se)$group %in% c(group1_label, group2_label)]
-    }
+  se <- se[, colData(se)$group %in% c(group1_label, group2_label)]
+}
 ```
 
 ```{r, eval = F}
-colnames(annotation_df_trans) <- c("UNIPROT", "SYMBOL", "ENSEMBL_ID")
-colnames(annotation_df_prot) <- c("UNIPROT", "SYMBOL", "ENSEMBL_ID")
+colnames(annotation_df_trans) <- c("UNIPROT", "SYMBOL", "ENSEMBL")
+colnames(annotation_df_prot) <- c("UNIPROT", "SYMBOL", "ENSEMBL")
 
 round_results_tables <- function(results_list) {
   lapply(results_list, function(result) {
@@ -96,41 +96,40 @@ results_trans <- round_results_tables(results_trans)
 
 ```{r, eval = F}
 movida_list <- list(
-    results_prot = deedee_prot,
-    results_trans = deedee_trans,
-    results_metabo = deedee_metabo,
-    metadata = metadata
+  results_prot = deedee_prot,
+  results_trans = deedee_trans,
+  results_metabo = deedee_metabo,
+  metadata = metadata
 )
 ```
 
 ```{r, eval = F}
 movida_list <- list(
-    annotation_df_prot = annotation_df_prot,
-    annotation_df_trans = annotation_df_trans,
-    annotation_df_metabo = annotation_df_metabo,
-    results_prot = results_prot,
-    results_trans = results_trans,
-    results_metabo = results_trans,
-    se_prot = se_prot,
-    se_trans = se_trans,
-    se_metabo = se_trans,
-    metadata = metadata
+  annotation_df_prot = annotation_df_prot,
+  annotation_df_trans = annotation_df_trans,
+  annotation_df_metabo = annotation_df_metabo,
+  results_prot = results_prot,
+  results_trans = results_trans,
+  results_metabo = results_trans,
+  se_prot = se_prot,
+  se_trans = se_trans,
+  se_metabo = se_trans,
+  metadata = metadata
 )
 ```
 
 ```{r prepare-metabo}
-
 se_metabo <- se_metabo[, grep("^exp2", colData(se_metabo)$SAMPLE_DESCRIPTION)]
 metadata_metabolon <- as.data.frame(colData(se_metabo))
 # metadata_metabolon <- openxlsx2::wb_to_df(cdt_path, sheet = 3)
-  
+
 metadata_metabolon <- metadata_metabolon[, c("CLIENT_SAMPLE_ID", "SAMPLE_DESCRIPTION")]
 
 # metadata_metabolon <- metadata_metabolon[grep("^exp2", metadata_metabolon$SAMPLE_DESCRIPTION), ]
 metadata_metabolon$sample_name <- gsub("exp2_MRLlpr_", "", metadata_metabolon$SAMPLE_DESCRIPTION)
 metadata_metabolon$sample_name <- tolower(metadata_metabolon$sample_name)
-metadata_metabolon$sample_name  <- gsub("ii", "2", metadata_metabolon$sample_name)
-metadata_metabolon$sample_name  <- gsub("fin", "finerenon", metadata_metabolon$sample_name)
+metadata_metabolon$sample_name <- gsub("ii", "2", metadata_metabolon$sample_name)
+metadata_metabolon$sample_name <- gsub("fin", "finerenon", metadata_metabolon$sample_name)
 
 metadata_metabolon <-
   tidyr::separate(metadata_metabolon, CLIENT_SAMPLE_ID, into = c("group_identifier", "sample_identifier"), sep = "_", remove = FALSE)
@@ -147,7 +146,6 @@ source("helper_functions_external/to_chebi.R")
 
 rowData(se_metabo)$CHEBI <- get_chebi_id_from_inchikey(rownames(rowData(se_metabo)))
 rownames(rowData(se_metabo)) <- rowData(se_metabo)$CHEBI
-
 ```
 
 ```{r prepare-proteom}
@@ -165,24 +163,34 @@ rownames(se_prot) <- sapply(rownames(rowData(se_prot)), function(x) {
 
 ```{r}
 movida_list <- list(
-    results_prot = results_prot,
-    results_trans = results_trans,
-    results_metabo = NULL,
-    se_prot = se_prot,
-    se_trans = se_trans,
-    se_metabo = se_metabo,
-    organism = "Mm"
+  results_prot = results_prot,
+  results_trans = results_trans,
+  results_metabo = NULL,
+  se_prot = se_prot,
+  se_trans = se_trans,
+  se_metabo = se_metabo,
+  organism = "Mm"
 )
 ```
 
 ```{r test movida-data}
-source("main/data_model.R")
-  assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
-  
-# test get inchi key 
-  source("main/data_model.R")
-  uniprot_inchi_query(rownames(rowData(se_metabo))[[1]], get_ensembl = TRUE, get_uniprot = TRUE)
+source("main/_data_model.R")
+assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
 ```
+  
+```{r test movida-data}
+# test get inchi key
+source("main/data_model.R")
+uniprot_inchi_query(rownames(rowData(se_metabo))[[1]], get_ensembl = TRUE, get_uniprot = TRUE)
+```
+```{r test movida-data}
+relationships1 <- movida_data$get_inchi_to_ensembl()
+relationships2 <- movida_data$get_inchi_to_uniprot()
+relationships3 <- movida_data$get_uniprot_to_ensembl()
+
+movida_data$save_relationships()
+```
+
 
 ```{r}
 source("main/app.R")

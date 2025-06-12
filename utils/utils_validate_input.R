@@ -50,34 +50,29 @@ check_organism <- function(organism) {
 # Function to check if movida_list contains the required elements
 check_movida_list <- function(movida_list) {
 
-  required_elements <- c(
-    "results_prot", "results_trans", "results_metabo",
-    "se_prot", "se_trans", "se_metabo", "organism"
-  )
   # Check if at least one se_ object is not NULL
   if (all(sapply(movida_list[c("se_prot", "se_trans", "se_metabo")], is.null))) {
-    stop("Error: At least one se_ object must not be NULL.")
+    stop("Error movida_list: At least one se_ object must not be NULL.")
   }
 
   # Check if at least one results_ object is not NULL
-  if (all(sapply(movida_list[c("results_prot", "results_trans", "results_metabo")], is.null))) {
-    stop("Error: At least one results_ object must not be NULL.")
-  }
+  # if (all(sapply(movida_list[c("results_prot", "results_trans", "results_metabo")], is.null))) {
+  #   stop("Error movida_list: At least one results_object must not be NULL.")
+  # }
 
   # Check if se_ objects inherit from SummarizedExperiment
   se_objects <- movida_list[c("se_prot", "se_trans", "se_metabo")]
-  if (!all(sapply(se_objects, function(se) is.null(se) || inherits(se, "SummarizedExperiment")))) {
-    stop("Error: All se_ objects must either be NULL or inherit from SummarizedExperiment.")
+  invalid_objects <- names(se_objects)[!sapply(se_objects, function(se) is.null(se) || inherits(se, "SummarizedExperiment"))]
+  if (length(invalid_objects) > 0) {
+    stop("Error movida_list: The following se_ objects do not inherit from SummarizedExperiment: ", paste(invalid_objects, collapse = ", "))
   }
 
-  # Check if colData of all se_ objects is valid
-  if (!check_se(se_objects)) {
-    stop("Error: colData of the SummarizedExperiment objects is not valid.")
-  }
+  # Check if se_ objects are valid
+  check_se(se_objects)
 
   # Check if organism is valid
   if (!check_organism(movida_list$organism)) {
-    stop("Error: Invalid organism.")
+    stop("Error movida_list: Invalid organism.")
   }
 
   return(TRUE)
@@ -106,6 +101,18 @@ check_se <- function(se_objects) {
   if (length(group_lists) > 1 && length(Reduce(intersect, group_lists)) == 0) {
     warning("Warning: Groups do not overlap at all across se_ objects.")
   }
+
+  # Check if rownames(rowData(se)) are valid for each se_ object
+  if (!is.null(se_objects$se_metabo) && !check_chebi(rownames(rowData(se_objects$se_metabo))) && !check_inchi(rownames(rowData(se_objects$se_metabo)))) {
+    stop("Error: Invalid ChEBI or InChI IDs in rownames(rowData(se_metabo)).")
+  }
+  if (!is.null(se_objects$se_prot) && !check_uniprot(rownames(rowData(se_objects$se_prot)))) {
+    stop("Error: Invalid UniProt IDs in rownames(rowData(se_prot)).")
+  }
+  if (!is.null(se_objects$se_trans) && !check_ensembl(rownames(rowData(se_objects$se_trans)))) {
+    stop("Error: Invalid Ensembl IDs in rownames(rowData(se_trans)).")
+  }
+
   return(TRUE)
 }
 

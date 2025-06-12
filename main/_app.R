@@ -3,9 +3,9 @@ MovidaApp <- function(movida_list) {
   library(shiny)
   
   # Source any scripts your app depends on
-  source("main/data_model.R")
-  source("main/ui.R")
-  source("main/server.R")
+  source("main/_data_model.R")
+  source("main/_ui.R")
+  source("main/_server.R")
   
   # Initialize the global data model
   # assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)

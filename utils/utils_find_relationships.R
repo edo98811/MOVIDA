@@ -18,12 +18,12 @@ library(progressr)
 # 7. uniprot_relationships: Builds UniProt-to-Ensembl relationships using SummarizedExperiment objects for protein and transcript data.
 
 # Wrapper for async querying multiple inchi IDs
-uniprot_inchi_query_async <- function(inchikeys, rowdata_target, get_ensembl = FALSE, get_uniprot = TRUE, sleep_time = 0.01) {
+uniprot_inchi_query_async <- function(inchikeys, rowdata_target, get_ensembl = FALSE, get_uniprot = TRUE, sleep_time = 0.01, progressbar = NULL) {
   with_progress({
     p <- progressor(steps = length(inchikeys))
     results <- furrr::future_map(inchikeys, function(id) { # like purrr map but works in parallel: https://www.rdocumentation.org/packages/furrr/versions/0.3.1/topics/future_map
       p()
-      Sys.sleep(sleep_time) # Avoid hitting the API too hard (needed?)
+      # Sys.sleep(sleep_time) # Avoid hitting the API too hard (needed?)
       tryCatch(
         {
           # Query UniProt for each inchi ID (fucntion return list)
@@ -58,7 +58,7 @@ uniprot_inchi_query_sync <- function(inchikeys, rowdata_target, get_ensembl = FA
     p <- progressor(steps = length(inchikeys))
     results <- lapply(inchikeys, function(id) { # Sequential processing using lapply
       p()
-      Sys.sleep(sleep_time) # Avoid hitting the API too hard
+      # Sys.sleep(sleep_time) # Avoid hitting the API too hard
       tryCatch(
         {
           # Query UniProt for each inchi ID (function returns list)
@@ -223,7 +223,7 @@ uniprot_inchi_query <- function(inchikey, get_ensembl = FALSE, get_uniprot = TRU
 #'
 #' @return A data frame containing the following columns:
 #'         - `UNIPROT`: UniProt protein IDs (if `get_uniprot` is TRUE).
-#'         - `ENSEMBL_ID`: Ensembl gene IDs (if `get_ensembl` is TRUE).
+#'         - `ENSEMBL`: Ensembl gene IDs (if `get_ensembl` is TRUE).
 #'         - `inchikey`: inchi IDs from the metabolomics data.
 #'         The UniProt and Ensembl IDs are filtered to include only those present in
 #'         `rowdata_target`. inchi IDs are repeated to match the lengths of the corresponding
@@ -243,7 +243,24 @@ uniprot_inchi_query <- function(inchikey, get_ensembl = FALSE, get_uniprot = TRU
 #' @examples
 #' # Example usage:
 #' # relationships <- build_inchi_relatioships(rowdata_metabo, rowdata_target)
-build_inchi_relationships <- function(rowdata_metabo, rowdata_target, get_ensembl = TRUE, get_uniprot = TRUE, organism) {
+build_inchi_relationships <- function(rowdata_metabo, rowdata_target, get_ensembl = FALSE, get_uniprot = FALSE, progressbar = NULL) {
+
+    # Throw an error if both get_ensembl and get_uniprot are FALSE
+  if (!get_ensembl && !get_uniprot) stop("Both get_ensembl and get_uniprot cannot be FALSE. At least one must be TRUE.")
+
+  # Check if get_uniprot or get_ensembl is TRUE and run check_type accordingly
+  if (get_uniprot) {
+    if (!check_uniprot(rownames(rowdata_target))) {
+      stop("UniProt check failed: Invalid UniProt IDs in the target data.")
+    }
+  }
+
+  if (get_ensembl) {
+    if (!check_ensembl(rownames(rowdata_target))) {
+      stop("Ensembl check failed: Invalid Ensembl IDs in the target data.")
+    }
+  }
+
   # Get the inchi IDs from the metabolomics data
   inchikeys <- rownames(rowdata_metabo)
 
@@ -253,9 +270,8 @@ build_inchi_relationships <- function(rowdata_metabo, rowdata_target, get_ensemb
     inchikeys <- inchikeys[!is.na(inchikeys)]
   }
 
-  browser()
   # Query UniProt for the InChIKeys
-  uniprot_data <- uniprot_inchi_query_sync(inchikeys[1:10], rowdata_target, get_ensembl = get_ensembl, get_uniprot = get_uniprot)
+  uniprot_data <- uniprot_inchi_query_async(inchikeys, rowdata_target, get_ensembl = get_ensembl, get_uniprot = get_uniprot, progressbar = progressbar)
 
   # Extract IDs, handling missing lists safely
   protein_ids_list <- lapply(uniprot_data, function(x) x$protein_ids %||% character(0))
@@ -268,18 +284,21 @@ build_inchi_relationships <- function(rowdata_metabo, rowdata_target, get_ensemb
     lengths(gene_ids_list)
   }
 
+  # Create a data frame to store the relationships
+  # Repeat each InChIKey based on the number of associated IDs (UniProt or Ensembl)
   relationships_df <- data.frame(
-    inchikey = rep(names(uniprot_data), repeats),
+    INCHIKEY = rep(names(uniprot_data), repeats),
     stringsAsFactors = FALSE
   )
 
-  # Append columns conditionally
+  # Append UniProt IDs to the data frame if requested
   if (get_uniprot) {
     relationships_df$UNIPROT <- unlist(protein_ids_list, use.names = FALSE)
   }
 
+  # Append Ensembl IDs to the data frame if requested
   if (get_ensembl) {
-    relationships_df$ENSEMBL_ID <- unlist(gene_ids_list, use.names = FALSE)
+    relationships_df$ENSEMBL <- unlist(gene_ids_list, use.names = FALSE)
   }
 
   return(relationships_df)
@@ -324,18 +343,15 @@ build_uniprot_to_ensembl <- function(rowdata_prot, rowdata_trans, organism) {
   # Create a new column in the data frame based on the keys_list
   # Choose the appropriate annotation database based on the organism
 
-  # Select the appropriate organism database
-  if (organism == "Hs") {
-    orgdb <- org.Hs.eg.db
-  } else if (organism == "Mm") {
-    orgdb <- org.Mm.eg.db
-  } else {
-    stop("Unsupported organism. Please use 'Hs' (human) or 'Mm' (mouse).")
-  }
-
   # Define the keys list for mapping
   keys_list <- rownames(rowdata_prot)
 
+  orgdb <- switch(
+    organism,
+    "Hs" = org.Hs.eg.db,
+    "Mm" = org.Mm.eg.db,
+    stop("Unsupported organism. Please use 'Hs' for human or 'Mm' for mouse.")
+  )
   new_column <- AnnotationDbi::select(
     orgdb,
     keys = keys_list,

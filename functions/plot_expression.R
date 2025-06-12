@@ -12,13 +12,13 @@ plot_expression_for_proteomics <- function(entity, se_object, anno_df, use_gene_
 
   # Use correct plot name
   if (use_gene_name) {
-    if (!entity %in% anno_df$ENSEMBL_ID) {
+    if (!entity %in% anno_df$ENSEMBL) {
       return(ggplot() +
         annotate("text", x = 0.5, y = 0.5, label = "Correspondence not found", size = 6, hjust = 0.5, vjust = 0.5) +
         theme_void())
     }
 
-    protein <- anno_df[anno_df$ENSEMBL_ID == entity, "UNIPROT"]
+    protein <- anno_df[anno_df$ENSEMBL== entity, "UNIPROT"]
   } else {
     protein <- entity
   }
@@ -74,7 +74,7 @@ plot_expression_for_transcriptomics <- function(entity, se_object, anno_df, use_
         theme_void())
     }
 
-    gene <- anno_df[anno_df$UNIPROT == entity, "ENSEMBL_ID"]
+    gene <- anno_df[anno_df$UNIPROT == entity, "ENSEMBL"]
   }
 
   # Use correct plot name
