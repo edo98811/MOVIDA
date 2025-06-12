@@ -1,23 +1,39 @@
 # Function to check if rownames(rowData(se)) are of type Ensembl
 check_ensembl <- function(names_to_check) {
-  if (!all(grepl("^ENS[A-Z]*[0-9]+$", names_to_check))) {
-    stop("Error: rownames(rowData(se)) are not all valid Ensembl IDs.")
+  invalid_names <- names_to_check[!grepl("^ENS[A-Z]*[0-9]+$", names_to_check)]
+  if (length(invalid_names) > 0) {
+    warning("Warning: The following rownames(rowData(se)) are not valid Ensembl IDs: ", paste(invalid_names, collapse = ", "))
+    return(FALSE)
   }
   return(TRUE)
 }
 
 # Function to check if rownames(rowData(se)) are of type ChEBI
 check_chebi <- function(names_to_check) {
-  if (!all(grepl("^CHEBI:[0-9]+$", names_to_check))) {
-    stop("Error: rownames(rowData(se)) are not all valid ChEBI IDs.")
+  invalid_names <- names_to_check[!grepl("^CHEBI:[0-9]+$", names_to_check)]
+  if (length(invalid_names) > 0) {
+    warning("Warning: The following rownames(rowData(se)) are not valid ChEBI IDs: ", paste(invalid_names, collapse = ", "))
+    return(FALSE)
   }
   return(TRUE)
 }
 
 # Function to check if rownames(rowData(se)) are of type UniProt
 check_uniprot <- function(names_to_check) {
-  if (!all(grepl("^[A-Z0-9]{6,10}$", names_to_check))) {
-    stop("Error: rownames(rowData(se)) are not all valid UniProt IDs.")
+  invalid_names <- names_to_check[!grepl("^[A-Z0-9]{6,10}$", names_to_check)]
+  if (length(invalid_names) > 0) {
+    warning("Warning: The following rownames(rowData(se)) are not valid UniProt IDs: ", paste(invalid_names, collapse = ", "))
+    return(FALSE)
+  }
+  return(TRUE)
+}
+
+# Function to check if rownames(rowData(se)) are of type InChI
+check_inchi <- function(names_to_check) {
+  invalid_names <- names_to_check[!grepl("^[A-Z]{14}-[A-Z]{10}-[A-Z]$", names_to_check)]
+  if (length(invalid_names) > 0) {
+    warning("Warning: The following rownames(rowData(se)) are not valid InChI identifiers: ", paste(invalid_names, collapse = ", "))
+    return(FALSE)
   }
   return(TRUE)
 }
@@ -25,13 +41,15 @@ check_uniprot <- function(names_to_check) {
 # Function to check if the organism is either 'hs' or 'Mm'
 check_organism <- function(organism) {
   if (!organism %in% c("Hs", "Mm")) {
-    stop("Error: organism must be either 'Hs' (Homo sapiens) or 'Mm' (Mus musculus).")
+    warning("Warning: organism must be either 'Hs' (Homo sapiens) or 'Mm' (Mus musculus).")
+    return(FALSE)
   }
   return(TRUE)
 }
 
 # Function to check if movida_list contains the required elements
 check_movida_list <- function(movida_list) {
+
   required_elements <- c(
     "results_prot", "results_trans", "results_metabo",
     "se_prot", "se_trans", "se_metabo", "organism"
@@ -57,6 +75,11 @@ check_movida_list <- function(movida_list) {
     stop("Error: colData of the SummarizedExperiment objects is not valid.")
   }
 
+  # Check if organism is valid
+  if (!check_organism(movida_list$organism)) {
+    stop("Error: Invalid organism.")
+  }
+
   return(TRUE)
 }
 
@@ -77,7 +100,7 @@ check_se <- function(se_objects) {
       return(NULL)
     }
   })
-  
+
   # Remove NULLs and check for overlap
   group_lists <- Filter(Negate(is.null), group_lists)
   if (length(group_lists) > 1 && length(Reduce(intersect, group_lists)) == 0) {

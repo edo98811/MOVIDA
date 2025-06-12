@@ -14,8 +14,8 @@ MovidaModel <- R6Class("MovidaModel",
     se_trans = NULL,
     se_metabo = NULL,
     contrasts = NULL,
-    chebi_to_ensembl = NULL,
-    chebi_to_uniprot = NULL,
+    inchi_to_ensembl = NULL,
+    inchi_to_uniprot = NULL,
     uniprot_to_ensembl = NULL,
     organism = NULL,
     determine_contrasts = function(movida_list) {
@@ -48,27 +48,27 @@ MovidaModel <- R6Class("MovidaModel",
       private$determine_contrasts(movida_list)
     },
     build_relationships = function() {
-      # Use parallel processing for building relationships!! used for chebi relationships
-      if (!inherits(future::plan(), "multisession")) {
-        plan(multisession)
-      } else {
-        warning("Parallel processing is already set to multisession. Tried to set it again, but it was not necessary. check logic!")
+      # Use parallel processing for building relationships!! used for inchi relationships
+      if (inherits(future::plan(), "multisession")) {
+        future::plan(future::sequential) # Stop the existing multisession plan
+        warning("Parallel processing was already set to multisession. Restarting it.")
       }
+      future::plan(future::multisession, workers = parallel::detectCores(logical = FALSE)) # Set the number of workers as needed
 
-      # Build ChEBI relationships if metabolomics data is available
+      # Build inchi relationships if metabolomics data is available
       if (!is.null(private$se_metabo)) {
-        # Build ChEBI to Ensembl relationships
+        # Build inchi to Ensembl relationships
         if (!is.null(private$se_prot)) {
-          private$chebi_to_ensembl <- chebi_relationships(
-            private$se_metabo, private$se_prot,
-            get_ensembl = TRUE, get_uniprot = FALSE
-          )
-        }
-        # Build ChEBI to UniProt relationships
-        if (!is.null(private$se_trans)) {
-          private$chebi_to_uniprot <- chebi_relationships(
+          private$inchi_to_ensembl <- inchi_relationships(
             private$se_metabo, private$se_prot,
             get_ensembl = FALSE, get_uniprot = TRUE
+          )
+        }
+        # Build inchi to UniProt relationships
+        if (!is.null(private$se_trans)) {
+          private$inchi_to_uniprot <- inchi_relationships(
+            private$se_metabo, private$se_prot,
+            get_ensembl = TRUE, get_uniprot = FALSE
           )
         }
       }
@@ -81,14 +81,32 @@ MovidaModel <- R6Class("MovidaModel",
         )
       }
     },
+    load_relationships = function(folder_path) {
+      if (!dir.exists(folder_path)) {
+      stop("The specified folder does not exist.")
+      }
+      
+      private$inchi_to_ensembl <- readRDS(file.path(folder_path, "inchi_to_ensembl.rds"))
+      private$inchi_to_uniprot <- readRDS(file.path(folder_path, "inchi_to_uniprot.rds"))
+      private$uniprot_to_ensembl <- readRDS(file.path(folder_path, "uniprot_to_ensembl.rds"))
+    },
+    save_relationships = function(folder_path) {
+      if (!dir.exists(folder_path)) {
+      dir.create(folder_path, recursive = TRUE)
+      }
+      
+      saveRDS(private$inchi_to_ensembl, file.path(folder_path, "inchi_to_ensembl.rds"))
+      saveRDS(private$inchi_to_uniprot, file.path(folder_path, "inchi_to_uniprot.rds"))
+      saveRDS(private$uniprot_to_ensembl, file.path(folder_path, "uniprot_to_ensembl.rds"))
+    },
     get_contrasts = function() {
       return(private$contrasts)
     },
-    get_chebi_to_ensembl = function() {
-      return(private$chebi_to_ensembl)
+    get_inchi_to_ensembl = function() {
+      return(private$inchi_to_ensembl)
     },
-    get_chebi_to_uniprot = function() {
-      return(private$chebi_to_uniprot)
+    get_inchi_to_uniprot = function() {
+      return(private$inchi_to_uniprot)
     },
     get_uniprot_to_ensembl = function() {
       return(private$uniprot_to_ensembl)
@@ -183,9 +201,9 @@ MovidaModel <- R6Class("MovidaModel",
         stop("Argument 'features' must be a vector of strings.")
       }
 
-      # Validate that the features are of a recognized type (Ensembl, ChEBI, or UniProt)
-      if (!check_ensembl(c(feature)) && !check_chebi(c(feature)) && !check_uniprot(c(feature))) {
-        stop("Error: rownames(rowData(se)) must be of type Ensembl, ChEBI, or UniProt.")
+      # Validate that the features are of a recognized type (Ensembl, inchi, or UniProt)
+      if (!check_ensembl(c(feature)) && !check_inchi(c(feature)) && !check_uniprot(c(feature))) {
+        stop("Error: rownames(rowData(se)) must be of type Ensembl, inchi, or UniProt.")
       }
 
       # Check if 'type' is a single string
@@ -199,24 +217,24 @@ MovidaModel <- R6Class("MovidaModel",
           return(private$uniprot_to_ensembl_dataframe[private$uniprot_to_ensembl_dataframe$ENSEMBL %in% feature, , drop = FALSE]$UNIPROT)
         } else if (target == "ensembl") {
           return(feature) # Ensembl to Ensembl is a direct match
-        } else if (target == "chebi") {
-          return(private$chebi_to_ensembl[private$chebi_to_ensembl$ENSEMBL %in% feature, , drop = FALSE]$CHEBI)
+        } else if (target == "inchi") {
+          return(private$inchi_to_ensembl[private$inchi_to_ensembl$ENSEMBL %in% feature, , drop = FALSE]$inchi)
         }
-      } else if (check_chebi(c(feature))) {
+      } else if (check_inchi(c(feature))) {
         if (target == "uniprot") {
-          return(private$chebi_to_uniprot[private$chebi_to_uniprot$CHEBI %in% feature, , drop = FALSE]$UNIPROT)
+          return(private$inchi_to_uniprot[private$inchi_to_uniprot$inchi %in% feature, , drop = FALSE]$UNIPROT)
         } else if (target == "ensembl") {
-          return(private$chebi_to_ensembl[private$chebi_to_ensembl$CHEBI %in% feature, , drop = FALSE]$ENSEMBL)
-        } else if (target == "chebi") {
-          return(feature) # ChEBI to ChEBI is a direct match
+          return(private$inchi_to_ensembl[private$inchi_to_ensembl$inchi %in% feature, , drop = FALSE]$ENSEMBL)
+        } else if (target == "inchi") {
+          return(feature) # inchi to inchi is a direct match
         }
       } else if (check_uniprot(c(feature))) {
         if (target == "uniprot") {
           return(feature) # UniProt to UniProt is a direct match
         } else if (target == "ensembl") {
           return(private$uniprot_to_ensembl_dataframe[private$uniprot_to_ensembl_dataframe$UNIPROT %in% feature, , drop = FALSE]$ENSEMBL)
-        } else if (target == "chebi") {
-          return(private$chebi_to_uniprot[private$chebi_to_uniprot$UNIPROT %in% feature, , drop = FALSE]$CHEBI)
+        } else if (target == "inchi") {
+          return(private$inchi_to_uniprot[private$inchi_to_uniprot$UNIPROT %in% feature, , drop = FALSE]$inchi)
         }
       }
     },
@@ -229,12 +247,12 @@ MovidaModel <- R6Class("MovidaModel",
       # Determine the source type based on the input features
       if (check_ensembl(features)) {
         source <- "transcriptomics"
-      } else if (check_chebi(features)) {
+      } else if (check_inchi(features)) {
         source <- "metabolomics"
       } else if (check_uniprot(features)) {
         source <- "proteomics"
       } else {
-        stop("Error: features must be of type Ensembl, ChEBI, or UniProt.")
+        stop("Error: features must be of type Ensembl, inchi, or UniProt.")
       }
 
       # Select the appropriate SummarizedExperiment object based on the source

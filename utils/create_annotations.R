@@ -6,47 +6,85 @@ library(httr2)
 library(jsonlite)
 library(future)
 library(furrr)
+library(progressr)
 
 # List of functions in this file:
-# 1. uniprot_chebi_query_async: Asynchronously queries UniProt for multiple ChEBI IDs and filters results based on target data.
-# 2. uniprot_chebi_query: Queries UniProt for a single ChEBI ID and retrieves associated protein and gene IDs.
-# 3. build_chebi_relationships: Builds relationships between ChEBI IDs, UniProt IDs, and Ensembl IDs based on metabolomics and target data.
+# 1. uniprot_inchi_query_async: Asynchronously queries UniProt for multiple inchi IDs and filters results based on target data.
+# 2. uniprot_inchi_query: Queries UniProt for a single inchi ID and retrieves associated protein and gene IDs.
+# 3. build_inchi_relationships: Builds relationships between inchi IDs, UniProt IDs, and Ensembl IDs based on metabolomics and target data.
 # 4. build_uniprot_to_ensembl: Maps UniProt IDs to Ensembl IDs for a given organism and filters results based on transcript data.
-# 5. add_chebi_ensembl_relationships: NOT USED Merges ChEBI-to-UniProt relationships with UniProt-to-Ensembl mappings to establish ChEBI-to-Ensembl relationships. 
-# 6. chebi_relationships: Generates ChEBI relationships using SummarizedExperiment objects for metabolomics and target data.
+# 5. add_inchi_ensembl_relationships: NOT USED Merges inchi-to-UniProt relationships with UniProt-to-Ensembl mappings to establish inchi-to-Ensembl relationships.
+# 6. inchi_relationships: Generates inchi relationships using SummarizedExperiment objects for metabolomics and target data.
 # 7. uniprot_relationships: Builds UniProt-to-Ensembl relationships using SummarizedExperiment objects for protein and transcript data.
 
-# Wrapper for async querying multiple ChEBI IDs
-uniprot_chebi_query_async <- function(chebi_ids, rowdata_target, get_ensembl = FALSE, get_uniprot = TRUE, sleep_time = 0.05) {
-  results <- furrr::future_map(chebi_ids, function(id) { # like purrr map but works in parallel: https://www.rdocumentation.org/packages/furrr/versions/0.3.1/topics/future_map
-    Sys.sleep(sleep_time) # Avoid hitting the API too hard (needed?)
-    tryCatch(
-      {
-        # Query UniProt for each ChEBI ID (fucntion return list)
-        query_result <- uniprot_chebi_query(id, get_ensembl = get_ensembl, get_uniprot = get_uniprot)
+# Wrapper for async querying multiple inchi IDs
+uniprot_inchi_query_async <- function(inchikeys, rowdata_target, get_ensembl = FALSE, get_uniprot = TRUE, sleep_time = 0.01) {
+  with_progress({
+    p <- progressor(steps = length(inchikeys))
+    results <- furrr::future_map(inchikeys, function(id) { # like purrr map but works in parallel: https://www.rdocumentation.org/packages/furrr/versions/0.3.1/topics/future_map
+      p()
+      Sys.sleep(sleep_time) # Avoid hitting the API too hard (needed?)
+      tryCatch(
+        {
+          # Query UniProt for each inchi ID (fucntion return list)
+          query_result <- uniprot_inchi_query(id, get_ensembl = get_ensembl, get_uniprot = get_uniprot)
 
-        # Filter the UniProt IDs to include only those present in the rownames of rowdata_target
-        if (get_uniprot && !is.null(query_result$protein_ids)) {
-          query_result$protein_ids <- query_result$protein_ids[query_result$protein_ids %in% rownames(rowdata_target)]
+          # Filter the UniProt IDs to include only those present in the rownames of rowdata_target
+          if (get_uniprot && !is.null(query_result$protein_ids)) {
+            query_result$protein_ids <- query_result$protein_ids[query_result$protein_ids %in% rownames(rowdata_target)]
+          }
+          # Filter the Ensembl IDs to include only those present in the rownames of rowdata_target
+          if (get_ensembl && !is.null(query_result$gene_ids)) {
+            query_result$gene_ids <- query_result$gene_ids[query_result$gene_ids %in% rownames(rowdata_target)]
+          }
+
+          query_result
+        },
+        error = function(e) {
+          warning(sprintf("Failed for %s: %s", id, e$message))
+          return(list(protein_ids = NULL, gene_ids = NULL))
         }
-        # Filter the Ensembl IDs to include only those present in the rownames of rowdata_target
-        if (get_ensembl && !is.null(query_result$gene_ids)) {
-          query_result$gene_ids <- query_result$gene_ids[query_result$gene_ids %in% rownames(rowdata_target)]
-        }
-
-        query_result
-      },
-      error = function(e) {
-        warning(sprintf("Failed for %s: %s", id, e$message))
-        return(list(protein_ids = NULL, gene_ids = NULL))
-      }
-    )
-  }, .options = furrr_options(seed = TRUE)) # Ensures reproducibility
-
-  names(results) <- chebi_ids
+      )
+    },
+    .options = furrr_options(seed = TRUE)
+    ) # Ensures reproducibility
+  })
+  names(results) <- inchikeys
   return(results)
 }
 
+uniprot_inchi_query_sync <- function(inchikeys, rowdata_target, get_ensembl = FALSE, get_uniprot = TRUE, sleep_time = 0.01) {
+  with_progress({
+    p <- progressor(steps = length(inchikeys))
+    results <- lapply(inchikeys, function(id) { # Sequential processing using lapply
+      p()
+      Sys.sleep(sleep_time) # Avoid hitting the API too hard
+      tryCatch(
+        {
+          # Query UniProt for each inchi ID (function returns list)
+          query_result <- uniprot_inchi_query(id, get_ensembl = get_ensembl, get_uniprot = get_uniprot)
+
+          # Filter the UniProt IDs to include only those present in the rownames of rowdata_target
+          if (get_uniprot && !is.null(query_result$protein_ids)) {
+            query_result$protein_ids <- query_result$protein_ids[query_result$protein_ids %in% rownames(rowdata_target)]
+          }
+          # Filter the Ensembl IDs to include only those present in the rownames of rowdata_target
+          if (get_ensembl && !is.null(query_result$gene_ids)) {
+            query_result$gene_ids <- query_result$gene_ids[query_result$gene_ids %in% rownames(rowdata_target)]
+          }
+
+          query_result
+        },
+        error = function(e) {
+          warning(sprintf("Failed for %s: %s", id, e$message))
+          return(list(protein_ids = NULL, gene_ids = NULL))
+        }
+      )
+    })
+  })
+  names(results) <- inchikeys
+  return(results)
+}
 #' @return A list containing the following elements:
 #' \describe{
 #'   \item{protein_ids}{A character vector of UniProt protein IDs extracted from the API response.
@@ -55,21 +93,22 @@ uniprot_chebi_query_async <- function(chebi_ids, rowdata_target, get_ensembl = F
 #'   If \code{get_ensembl} is \code{FALSE}, this will be \code{NULL}.
 #'   If no Ensembl references are found for a result, the corresponding value will be \code{NA}.}
 #' }
-# Function to query UniProt for ChEBI-related data
-uniprot_chebi_query <- function(chebi_id, get_ensembl = FALSE, get_uniprot = TRUE) {
-  if (!check_chebi(chebi_id)) {
-    stop("Not a valid ChEBI ID: ", chebi_id)
+# Function to query UniProt for inchi-related data
+uniprot_inchi_query <- function(inchikey, get_ensembl = FALSE, get_uniprot = TRUE) {
+  # Check if the provided inchi ID is valid
+  if (!check_inchi(inchikey)) {
+    stop("Not a valid inchi ID: ", inchikey)
   }
+
   # Base URL for the UniProt REST API
-  base_url <- "https://rest.uniprot.org/uniprotkb/search"
+  base_url <- "https://rest.uniprot.org/uniprotkb/stream"
 
   # Define the query parameters for the API request
-
-
+  # test query for postman: https://rest.uniprot.org/uniprotkb/stream?query=inchikey%3AKJTLQQUUPVSXIM-UHFFFAOYSA-N%20AND%20reviewed%3Atrue&fields=accession%2Cxref_ensembl&sort=accession%20desc
   params <- list(
-    query = paste0(chebi_id, " AND reviewed:true"), # Example query; replace with actual ChEBI ID logic
+    query = paste0("inchikey:", inchikey, " AND reviewed:true"),
     fields = paste(c(
-      if (get_uniprot) "primaryAccession",
+      if (get_uniprot) "accession",
       if (get_ensembl) "xref_ensembl"
     ), collapse = ","), # Fields to retrieve
     sort = "accession desc" # Sort results by accession in descending order
@@ -84,6 +123,7 @@ uniprot_chebi_query <- function(chebi_id, get_ensembl = FALSE, get_uniprot = TRU
 
   # Handle non-200 response
   status_code <- resp_status(resp)
+
   if (status_code != 200) {
     error_body <- tryCatch(
       jsonlite::fromJSON(resp_body_string(resp))$messages,
@@ -93,11 +133,11 @@ uniprot_chebi_query <- function(chebi_id, get_ensembl = FALSE, get_uniprot = TRU
   }
 
   # Parse the JSON response into an R object
-  data <- fromJSON(content(resp, "text", encoding = "UTF-8"))
+  data <- resp_body_json(resp)
   if (length(data$results) == 0) {
-    warning("No matches found for the provided ChEBI ID.")
+    warning("No matches found for the provided inchi ID:", inchikey)
     return(list(protein_ids = NULL, gene_ids = NULL))
-    # stop("No matches found for the provided ChEBI ID during mapping to UniProt.")
+    # stop("No matches found for the provided inchi ID during mapping to UniProt.")
   }
 
   # Extract UniProt protein IDs if requested  # Extract Ensembl gene IDs if requested
@@ -134,6 +174,7 @@ uniprot_chebi_query <- function(chebi_id, get_ensembl = FALSE, get_uniprot = TRU
         x$primaryAccession
       }
     })
+    protein_ids <- unique(unlist(protein_ids)) # Convert to a character vector
   } else {
     protein_ids <- NULL
   }
@@ -155,6 +196,7 @@ uniprot_chebi_query <- function(chebi_id, get_ensembl = FALSE, get_uniprot = TRU
       }
       return(unique(gene_ids))
     })
+    gene_ids <- unique(unlist(gene_ids[!is.na(gene_ids)])) # Convert to a character vector and remove NAs
   } else {
     gene_ids <- NULL
   }
@@ -163,15 +205,15 @@ uniprot_chebi_query <- function(chebi_id, get_ensembl = FALSE, get_uniprot = TRU
   return(list(protein_ids = protein_ids, gene_ids = gene_ids))
 }
 
-#' Build ChEBI Relationships
+#' Build inchi Relationships
 #'
-#' This function generates a data frame of relationships between ChEBI IDs, UniProt IDs,
+#' This function generates a data frame of relationships between inchi IDs, UniProt IDs,
 #' and Ensembl IDs based on metabolomics and target data. It queries UniProt to retrieve
-#' protein and gene information associated with the provided ChEBI IDs and filters the
+#' protein and gene information associated with the provided inchi IDs and filters the
 #' results based on their presence in the target data.
 #'
 #' @param rowdata_metabo A data frame or similar object containing metabolomics data.
-#'        This should include ChEBI IDs.
+#'        This should include inchi IDs.
 #' @param rowdata_target A data frame or similar object containing target data.
 #'        The row names should correspond to UniProt or Ensembl IDs.
 #' @param get_ensembl Logical. If TRUE, Ensembl gene IDs will be retrieved and included
@@ -182,65 +224,74 @@ uniprot_chebi_query <- function(chebi_id, get_ensembl = FALSE, get_uniprot = TRU
 #' @return A data frame containing the following columns:
 #'         - `UNIPROT`: UniProt protein IDs (if `get_uniprot` is TRUE).
 #'         - `ENSEMBL_ID`: Ensembl gene IDs (if `get_ensembl` is TRUE).
-#'         - `CHEBI_ID`: ChEBI IDs from the metabolomics data.
+#'         - `inchikey`: inchi IDs from the metabolomics data.
 #'         The UniProt and Ensembl IDs are filtered to include only those present in
-#'         `rowdata_target`. ChEBI IDs are repeated to match the lengths of the corresponding
+#'         `rowdata_target`. inchi IDs are repeated to match the lengths of the corresponding
 #'         UniProt/Ensembl data.
 #'
 #' @details
 #' The function performs the following steps:
-#' 1. Extracts ChEBI IDs from the metabolomics data (`rowdata_metabo`).
-#' 2. Filters out NA values from the ChEBI IDs.
-#' 3. Queries UniProt for each ChEBI ID to retrieve associated protein and gene information.
+#' 1. Extracts inchi IDs from the metabolomics data (`rowdata_metabo`).
+#' 2. Filters out NA values from the inchi IDs.
+#' 3. Queries UniProt for each inchi ID to retrieve associated protein and gene information.
 #' 4. Filters the retrieved UniProt and Ensembl IDs to include only those present in
 #'    the row names of `rowdata_target`.
-#' 5. Constructs a data frame containing the relationships between ChEBI IDs, UniProt IDs,
+#' 5. Constructs a data frame containing the relationships between inchi IDs, UniProt IDs,
 #'    and Ensembl IDs.
 #'
 #'
 #' @examples
 #' # Example usage:
-#' # relationships <- build_chebi_relatioships(rowdata_metabo, rowdata_target)
-build_chebi_relationships <- function(rowdata_metabo, rowdata_target, get_ensembl = TRUE, get_uniprot = TRUE) {
-  # Get the ChEBI IDs from the metabolomics data
-  chebi_ids <- rownames(rowdata_metabo)
+#' # relationships <- build_inchi_relatioships(rowdata_metabo, rowdata_target)
+build_inchi_relationships <- function(rowdata_metabo, rowdata_target, get_ensembl = TRUE, get_uniprot = TRUE, organism) {
+  # Get the inchi IDs from the metabolomics data
+  inchikeys <- rownames(rowdata_metabo)
 
   # Filter out NA values
-  chebi_ids <- chebi_ids[!is.na(chebi_ids)]
+  if (anyNA(inchikeys)) {
+    warning("Some InChIKeys are NA and will be removed.")
+    inchikeys <- inchikeys[!is.na(inchikeys)]
+  }
 
-  # Query UniProt for the ChEBI IDs using the asynchronous function
-  uniprot_data <- uniprot_chebi_query_async(chebi_id, rowdata_target, get_ensembl = get_ensembl, get_uniprot = get_uniprot)
-  
-  # Extract protein and gene IDs
-  protein_ids <- unlist(lapply(uniprot_data, `[[`, "protein_ids"))
-  gene_ids <- unlist(lapply(uniprot_data, `[[`, "gene_ids"))
+  browser()
+  # Query UniProt for the InChIKeys
+  uniprot_data <- uniprot_inchi_query_sync(inchikeys[1:10], rowdata_target, get_ensembl = get_ensembl, get_uniprot = get_uniprot)
 
-  # Create a data frame with the results
-  # This data frame includes UniProt IDs, Ensembl IDs, and ChEBI IDs
-  # UniProt IDs and Ensembl IDs are filtered based on their presence in rowdata_target
-  # ChEBI IDs are repeated to match the lengths of the corresponding UniProt/Ensembl data
+  # Extract IDs, handling missing lists safely
+  protein_ids_list <- lapply(uniprot_data, function(x) x$protein_ids %||% character(0))
+  gene_ids_list <- lapply(uniprot_data, function(x) x$gene_ids %||% character(0))
+
+  # Determine how many times to repeat each InChIKey
+  repeats <- if (get_uniprot) {
+    lengths(protein_ids_list)
+  } else {
+    lengths(gene_ids_list)
+  }
+
   relationships_df <- data.frame(
-    CHEBI_ID = rep(chebi_ids, ifelse(get_uniprot, lengths(uniprot_data$protein_ids), lengths(uniprot_data$gene_ids))),
+    inchikey = rep(names(uniprot_data), repeats),
+    stringsAsFactors = FALSE
   )
 
+  # Append columns conditionally
   if (get_uniprot) {
-    relationships_df$UNIPROT <- protein_ids
+    relationships_df$UNIPROT <- unlist(protein_ids_list, use.names = FALSE)
   }
 
   if (get_ensembl) {
-    relationships_df$ENSEMBL_ID <- gene_ids
+    relationships_df$ENSEMBL_ID <- unlist(gene_ids_list, use.names = FALSE)
   }
 
   return(relationships_df)
 }
 
-#' Build UniProt to Ensembl Mapping and Add ChEBI-Ensembl Relationships
+#' Build UniProt to Ensembl Mapping and Add inchi-Ensembl Relationships
 #'
 #' This script contains two functions:
 #' 1. `build_uniprot_to_ensembl`: Maps UniProt IDs to Ensembl IDs for a given organism
 #'    and filters the results based on the presence of Ensembl IDs in a provided transcript dataset.
-#' 2. `add_chebi_ensembl_relationships`: Merges ChEBI-to-UniProt relationships with
-#'    UniProt-to-Ensembl relationships to establish ChEBI-to-Ensembl mappings.
+#' 2. `add_inchi_ensembl_relationships`: Merges inchi-to-UniProt relationships with
+#'    UniProt-to-Ensembl relationships to establish inchi-to-Ensembl mappings.
 #'
 #' ## Functions:
 #'
@@ -259,18 +310,17 @@ build_chebi_relationships <- function(rowdata_metabo, rowdata_target, get_ensemb
 #'   - Filters the results to include only Ensembl IDs present in `rowdata_trans`.
 #' - **Returns**: A filtered data frame containing UniProt-to-Ensembl mappings.
 #'
-#' ### `add_chebi_ensembl_relationships(relationships_chebi_to_uniprot, relationships_uniprot_to_ensembl)`
+#' ### `add_inchi_ensembl_relationships(relationships_inchi_to_uniprot, relationships_uniprot_to_ensembl)`
 #'
-#' - **Purpose**: Combines ChEBI-to-UniProt relationships with UniProt-to-Ensembl mappings.
+#' - **Purpose**: Combines inchi-to-UniProt relationships with UniProt-to-Ensembl mappings.
 #' - **Parameters**:
-#'   - `relationships_chebi_to_uniprot`: A data frame containing ChEBI-to-UniProt relationships.
+#'   - `relationships_inchi_to_uniprot`: A data frame containing inchi-to-UniProt relationships.
 #'   - `relationships_uniprot_to_ensembl`: A data frame containing UniProt-to-Ensembl mappings.
 #' - **Details**:
 #'   - Performs an outer join on the `UNIPROT` column to merge the two datasets.
 #'   - Ensures that all relationships are preserved, even if some entries are missing in one dataset.
-#' - **Returns**: A merged data frame containing ChEBI-to-Ensembl relationships.
+#' - **Returns**: A merged data frame containing inchi-to-Ensembl relationships.
 build_uniprot_to_ensembl <- function(rowdata_prot, rowdata_trans, organism) {
-  
   # Create a new column in the data frame based on the keys_list
   # Choose the appropriate annotation database based on the organism
 
@@ -312,10 +362,10 @@ build_uniprot_to_ensembl <- function(rowdata_prot, rowdata_trans, organism) {
 }
 
 # NOT USED
-add_chebi_ensembl_relationships <- function(relationships_chebi_to_uniprot, relationships_uniprot_to_ensembl) {
+add_inchi_ensembl_relationships <- function(relationships_inchi_to_uniprot, relationships_uniprot_to_ensembl) {
   # Perform an outer join on the UNIPROT column
   merged_relationships <- merge(
-    relationships_chebi_to_uniprot,
+    relationships_inchi_to_uniprot,
     relationships_uniprot_to_ensembl,
     by = "UNIPROT",
     all = TRUE
@@ -324,12 +374,25 @@ add_chebi_ensembl_relationships <- function(relationships_chebi_to_uniprot, rela
   return(merged_relationships)
 }
 
-chebi_relationships <- function(se_metabo, se_uniprot, organism, get_ensembl = FALSE, get_uniprot = FALSE) {
+inchi_relationships <- function(se_metabo, se_target, organism, get_ensembl = FALSE, get_uniprot = FALSE) {
+
   # Throw an error if both get_ensembl and get_uniprot are FALSE
   if (!get_ensembl && !get_uniprot) stop("Both get_ensembl and get_uniprot cannot be FALSE. At least one must be TRUE.")
+  # Check if get_uniprot or get_ensembl is TRUE and run check_type accordingly
+  if (get_uniprot) {
+    if (!check_uniprot(rownames(rowData(se_target)))) {
+      stop("UniProt check failed: Invalid UniProt IDs in the target data.")
+    }
+  }
 
-  # Build ChEBI relationships based on the provided SummarizedExperiment objects
-  build_chebi_relationships(rowData(se_metabo), rowData(se_uniprot), get_ensembl = get_ensembl, get_uniprot = get_uniprot, organism)
+  if (get_ensembl) {
+    if (!check_ensembl(rownames(rowData(se_target)))) {
+      stop("Ensembl check failed: Invalid Ensembl IDs in the target data.")
+    }
+  }
+
+  # Build inchi relationships based on the provided SummarizedExperiment objects
+  build_inchi_relationships(rowData(se_metabo), rowData(se_target), get_ensembl = get_ensembl, get_uniprot = get_uniprot, organism)
 }
 
 uniprot_relationships <- function(se_uniprot, se_trans, organism) {
