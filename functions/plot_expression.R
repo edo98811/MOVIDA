@@ -18,7 +18,7 @@ plot_expression_for_proteomics <- function(entity, se_object, anno_df, use_gene_
         theme_void())
     }
 
-    protein <- anno_df[anno_df$ENSEMBL== entity, "UNIPROT"]
+    protein <- anno_df[anno_df$ENSEMBL == entity, "UNIPROT"]
   } else {
     protein <- entity
   }
@@ -90,7 +90,9 @@ plot_expression_for_transcriptomics <- function(entity, se_object, anno_df, use_
   plotting_data$group <- as.factor(plotting_data$group)
 
   # Export the plotting data if requested
-  if (export_data) return(plotting_data)
+  if (export_data) {
+    return(plotting_data)
+  }
 
   # Return plot
   return(plotting_data %>%
@@ -110,4 +112,65 @@ plot_expression_for_transcriptomics <- function(entity, se_object, anno_df, use_
     ggtitle(gene) +
     xlab("") +
     ylab(gene))
+}
+
+
+plot_expression <- function(entity, se_object, export_data = FALSE, data_type = "unknown", group_var = "group") {
+
+  # Use count matrix from SummarizedExperiment if not provided
+
+  count_matrix <- assays(se_object)$counts
+
+  # Check if entity exists in count matrix
+  if (!entity %in% rownames(count_matrix)) {
+    return(ggplot() +
+      annotate("text",
+        x = 0.5, y = 0.5,
+        label = paste0("Entity '", entity, "' not found in data"),
+        size = 6, hjust = 0.5, vjust = 0.5
+      ) +
+      theme_void())
+  }
+
+  # Create plotting data
+  plotting_data <- t(count_matrix[entity, , drop = FALSE])
+  rownames(plotting_data) <- colnames(count_matrix)
+  colnames(plotting_data) <- "Value"
+
+  # Merge with group information
+  plotting_data <- merge(plotting_data, colData(se_object)[c(group_var)], by = "row.names")
+  plotting_data$group <- as.factor(plotting_data[[group_var]])
+
+  # Set display name
+  display_name <- entity
+
+  # Determine background color based on data type
+  if (data_type == "proteomics") {
+    bg_color <- "#ffe9e9" # Light red for proteomics
+  } else if (data_type == "transcriptomics") {
+    bg_color <- "#e8f8fe" # Light blue for transcriptomics
+  } else if (data_type == "metabolomics") {
+    bg_color <- "#ffffdd" # Light yellow for metabolomics
+  }
+
+  # Export the plotting data if requested
+  if (export_data) {
+    return(plotting_data)
+  }
+
+  # Return plot
+  return(plotting_data %>%
+    ggplot(aes(x = group, y = Value, fill = group)) +
+    ggforce::geom_sina(aes(color = group), size = 1.5) +
+    ggrepel::geom_text_repel(aes(label = Row.names), size = 2) +
+    geom_boxplot(alpha = 0.3) +
+    theme_bw() +
+    theme(
+      legend.position = "none",
+      plot.title = element_text(size = 21),
+      panel.background = element_rect(fill = bg_color, color = NA)
+    ) +
+    ggtitle(display_name) +
+    xlab("") +
+    ylab(display_name))
 }
