@@ -1,12 +1,10 @@
-
-
 library("RColorBrewer")
 library("grDevices")
+
 gs_heatmap <- function(se,
-                       res_enrich,
-                       mydata,
-                       annotation_obj = NULL,
-                       gtl = NULL,
+                      #  mydata, is it just the count matrix?
+                       res_enrich = NULL,
+                       use_symbol = FALSE, # da togliere tutte le reference
                        geneset_id = NULL,
                        genelist = NULL,
                        FDR = 0.05,
@@ -18,14 +16,6 @@ gs_heatmap <- function(se,
                        anno_col_info = NULL,
                        plot_title = NULL,
                        ...) {
-  if (!is.null(gtl)) {
-    checkup_gtl(gtl)
-    dds <- gtl$dds
-    res_de <- gtl$res_de
-    res_enrich <- gtl$res_enrich
-    annotation_obj <- gtl$annotation_obj
-  }
-  
   if (!is.null(winsorize_threshold)) {
     stopifnot(is.numeric(winsorize_threshold))
     stopifnot(winsorize_threshold >= 0)
@@ -46,7 +36,7 @@ gs_heatmap <- function(se,
     if (geneset_id %in% res_enrich[["gs_id"]]) {
       thisset_name <- res_enrich[geneset_id, "gs_description"]
       thisset_members <- unlist(strsplit(res_enrich[geneset_id, "gs_genes"], ","))
-      thisset_members_ids <- annotation_obj$ensembl_gene_id[match(thisset_members, annotation_obj$gene_symbol)]
+      thisset_members_ids <- rowData(se)$ENSEMBL[match(thisset_members, rowData(se)$SYMBOL)]
     }
   } else {
     # overridable via a list
@@ -64,14 +54,16 @@ gs_heatmap <- function(se,
   sig_to_keep <- (thisset_members_ids %in% rownames(se)) #
   thisset_members_ids_available <- thisset_members_ids[sig_to_keep]
 
-  mydata_sig <- mydata[thisset_members_ids_available, , drop = FALSE]
-  
+  mydata_sig <- assay(se)[thisset_members_ids_available, , drop = FALSE]
+  # mydata_sig <- mydata[thisset_members_ids_available, , drop = FALSE]
+
   # to avoid problems later, remove the ones non-expressed and with variance = 0
   to_remove <- apply(mydata_sig, 1, var) == 0
   mydata_sig <- mydata_sig[!to_remove, , drop = FALSE]
-  
-  if (nrow(mydata_sig) < 2) 
+
+  if (nrow(mydata_sig) < 2) {
     warning("Creating a heatmap with only one gene...")
+  }
 
   hm_name <- "Expression \nvalues"
 
@@ -90,7 +82,7 @@ gs_heatmap <- function(se,
     # do the winsoring
     mydata_sig[mydata_sig < -winsorize_threshold] <- -winsorize_threshold
     mydata_sig[mydata_sig > winsorize_threshold] <- winsorize_threshold
-  } 
+  }
   # dim(mydata_sig)
 
   if (is.null(plot_title)) {
@@ -130,7 +122,7 @@ gs_heatmap <- function(se,
   #          labels_row = annotation_obj[rownames(mydata_sig), ]$gene_name,
   #          annotation_col = sample_decoration)
 
-
+  #
   if (is.null(anno_col_info)) {
     ch <- ComplexHeatmap::Heatmap(
       matrix = mydata_sig,
@@ -140,7 +132,10 @@ gs_heatmap <- function(se,
       rect_gp = grid::gpar(col = "white", lwd = 0.5),
       cluster_rows = cluster_rows,
       cluster_columns = cluster_columns,
-      row_labels = annotation_obj$gene_symbol[match(rownames(mydata_sig), annotation_obj$ensembl_gene_id)],
+      row_labels = ifelse(use_symbol && !is.null(rowData(se)$SYMBOL),
+        rowData(se)$SYMBOL[match(rownames(mydata_sig), rownames(rowData(se)))],
+        rownames(rowData(se))
+      ),
       ...
     )
   } else {
@@ -196,12 +191,16 @@ gs_heatmap <- function(se,
       rect_gp = grid::gpar(col = "white", lwd = 0.5),
       cluster_rows = cluster_rows,
       cluster_columns = cluster_columns,
-      row_labels = annotation_obj$gene_symbol[match(rownames(mydata_sig), annotation_obj$ensembl_gene_id)],
+      row_labels = ifelse(use_symbol && !is.null(rowData(se)$SYMBOL),
+        rowData(se)$SYMBOL[match(rownames(mydata_sig), rownames(rowData(se)))],
+        rownames(rowData(se))
+      ),
       top_annotation = deco_ha,
       ...
     )
   }
+  # is this gggplot?
   ComplexHeatmap::draw(ch, merge_legend = TRUE)
 }
 
-\\ idea -> mettere solo la funzione per creare la heatamp, le altre operazioni nel overview.
+# idea -> mettere solo la funzione per creare la heatamp, le altre operazioni nel overview.
