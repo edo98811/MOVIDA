@@ -289,7 +289,7 @@ MovidaModel <- R6Class("MovidaModel",
         if (target == "uniprot") {
           return(private$uniprot_to_ensembl_dataframe[private$uniprot_to_ensembl_dataframe$ENSEMBL %in% feature, , drop = FALSE]$UNIPROT)
         } else if (target == "ensembl") {
-          return(feature) # Ensembl to Ensembl is a direct match
+          return(c(feature)) # Ensembl to Ensembl is a direct match
         } else if (target == "inchi") {
           return(private$inchi_to_ensembl[private$inchi_to_ensembl$ENSEMBL %in% feature, , drop = FALSE]$inchi)
         }
@@ -299,11 +299,11 @@ MovidaModel <- R6Class("MovidaModel",
         } else if (target == "ensembl") {
           return(private$inchi_to_ensembl[private$inchi_to_ensembl$inchi %in% feature, , drop = FALSE]$ENSEMBL)
         } else if (target == "inchi") {
-          return(feature) # inchi to inchi is a direct match
+          return(c(feature)) # inchi to inchi is a direct match
         }
       } else if (check_uniprot(c(feature))) {
         if (target == "uniprot") {
-          return(feature) # UniProt to UniProt is a direct match
+          return(c(feature)) # UniProt to UniProt is a direct match
         } else if (target == "ensembl") {
           return(private$uniprot_to_ensembl_dataframe[private$uniprot_to_ensembl_dataframe$UNIPROT %in% feature, , drop = FALSE]$ENSEMBL)
         } else if (target == "inchi") {
@@ -401,6 +401,17 @@ MovidaModel <- R6Class("MovidaModel",
         return(rownames(private$se_prot))
       } else if (source == "metabolomics") {
         return(rownames(private$se_metabo))
+      } else {
+        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      }
+    },
+    get_metadata_columns = function(source) {
+      if (source == "proteomics") {
+        return(colnames(private$se_trans))
+      } else if (source == "transcriptomics") {
+        return(colnames(private$se_prot))
+      } else if (source == "metabolomics") {
+        return(colnames(private$se_metabo))
       } else {
         stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
