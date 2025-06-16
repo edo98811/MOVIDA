@@ -204,3 +204,4 @@ gs_heatmap <- function(se,
   ComplexHeatmap::draw(ch, merge_legend = TRUE)
 }
 
+\\ idea -> mettere solo la funzione per creare la heatamp, le altre operazioni nel overview.

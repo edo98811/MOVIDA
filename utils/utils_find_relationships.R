@@ -85,15 +85,50 @@ uniprot_inchi_query_sync <- function(inchikeys, rowdata_target, get_ensembl = FA
   names(results) <- inchikeys
   return(results)
 }
-#' @return A list containing the following elements:
-#' \describe{
-#'   \item{protein_ids}{A character vector of UniProt protein IDs extracted from the API response.
-#'   If \code{get_uniprot} is \code{FALSE}, this will be \code{NULL}.}
-#'   \item{gene_ids}{A character vector of Ensembl gene IDs extracted from the API response.
-#'   If \code{get_ensembl} is \code{FALSE}, this will be \code{NULL}.
-#'   If no Ensembl references are found for a result, the corresponding value will be \code{NA}.}
+
+#' Query UniProt for Protein and Gene IDs using an InChIKey
+#'
+#' This function queries the UniProt REST API to retrieve UniProt protein IDs 
+#' and/or Ensembl gene IDs associated with a given InChIKey. The function 
+#' validates the provided InChIKey, constructs the appropriate API request, 
+#' and parses the response to extract the desired information.
+#'
+#' @param inchikey A character string representing a valid InChIKey.
+#' @param get_ensembl Logical. If `TRUE`, the function retrieves Ensembl gene IDs. Default is `FALSE`.
+#' @param get_uniprot Logical. If `TRUE`, the function retrieves UniProt protein IDs. Default is `TRUE`.
+#'
+#' @return A list containing:
+#' \itemize{
+#'   \item \code{protein_ids}: A character vector of UniProt protein IDs, or \code{NULL} if \code{get_uniprot} is \code{FALSE}.
+#'   \item \code{gene_ids}: A character vector of Ensembl gene IDs, or \code{NULL} if \code{get_ensembl} is \code{FALSE}.
 #' }
-# Function to query UniProt for inchi-related data
+#' If no matches are found, a warning is issued and both elements of the list are \code{NULL}.
+#'
+#' @details
+#' The function constructs a query to the UniProt REST API using the provided 
+#' InChIKey and optional parameters to specify whether to retrieve UniProt 
+#' protein IDs and/or Ensembl gene IDs. The API response is parsed to extract 
+#' the requested information. If the API returns an error or no matches are 
+#' found, appropriate error handling is performed.
+#'
+#' @note
+#' The function assumes that the `check_inchi` function is available in the 
+#' environment to validate the InChIKey. The UniProt REST API must be accessible 
+#' for the function to work.
+#'
+#' @examples
+#' \dontrun{
+#' # Query UniProt for protein IDs using an InChIKey
+#' result <- uniprot_inchi_query("KJTLQQUUPVSXIM-UHFFFAOYSA-N")
+#' print(result$protein_ids)
+#'
+#' # Query UniProt for both protein and gene IDs
+#' result <- uniprot_inchi_query("KJTLQQUUPVSXIM-UHFFFAOYSA-N", get_ensembl = TRUE)
+#' print(result$gene_ids)
+#' }
+#'
+#' @import httr2
+#' @importFrom jsonlite fromJSON
 uniprot_inchi_query <- function(inchikey, get_ensembl = FALSE, get_uniprot = TRUE) {
   # Check if the provided inchi ID is valid
   if (!check_inchi(inchikey)) {
@@ -304,41 +339,41 @@ build_inchi_relationships <- function(rowdata_metabo, rowdata_target, get_ensemb
   return(relationships_df)
 }
 
-#' Build UniProt to Ensembl Mapping and Add inchi-Ensembl Relationships
+#' Build UniProt to Ensembl Mapping
 #'
-#' This script contains two functions:
-#' 1. `build_uniprot_to_ensembl`: Maps UniProt IDs to Ensembl IDs for a given organism
-#'    and filters the results based on the presence of Ensembl IDs in a provided transcript dataset.
-#' 2. `add_inchi_ensembl_relationships`: Merges inchi-to-UniProt relationships with
-#'    UniProt-to-Ensembl relationships to establish inchi-to-Ensembl mappings.
+#' This function maps UniProt identifiers to Ensembl identifiers for a given organism.
+#' It uses the appropriate annotation database based on the specified organism and filters
+#' the results to include only those Ensembl IDs present in the provided transcript data.
 #'
-#' ## Functions:
+#' @param rowdata_prot A data frame or matrix containing protein data, where row names are UniProt IDs.
+#' @param rowdata_trans A data frame or matrix containing transcript data, where row names are Ensembl IDs.
+#' @param organism A character string specifying the organism. Use "Hs" for human or "Mm" for mouse.
 #'
-#' ### `build_uniprot_to_ensembl(rowdata_prot, rowdata_trans, organism)`
+#' @return A data frame containing the mapping of UniProt IDs to Ensembl IDs, filtered to include
+#'         only those Ensembl IDs present in `rowdata_trans`.
 #'
-#' - **Purpose**: Maps UniProt protein IDs to Ensembl transcript IDs for a specified organism.
-#' - **Parameters**:
-#'   - `rowdata_prot`: A data frame where row names are UniProt IDs.
-#'   - `rowdata_trans`: A data frame where row names are Ensembl transcript IDs.
-#'   - `organism`: A string specifying the organism ("Hs" for human, "Mm" for mouse).
-#' - **Details**:
-#'   - Uses the appropriate organism annotation database (`org.Hs.eg.db` or `org.Mm.eg.db`).
-#'   - Maps UniProt IDs to Ensembl IDs using the `AnnotationDbi::select` function.
-#'   - Warns if any UniProt IDs cannot be mapped to Ensembl IDs.
-#'   - Stops execution if no mappings are found.
-#'   - Filters the results to include only Ensembl IDs present in `rowdata_trans`.
-#' - **Returns**: A filtered data frame containing UniProt-to-Ensembl mappings.
+#' @details
+#' The function uses the `AnnotationDbi::select` function to perform the mapping. It checks for
+#' missing values in the mapping and issues a warning if some entries could not be mapped. If
+#' all entries are missing, the function stops with an error.
 #'
-#' ### `add_inchi_ensembl_relationships(relationships_inchi_to_uniprot, relationships_uniprot_to_ensembl)`
+#' @note
+#' Ensure that the `org.Hs.eg.db` or `org.Mm.eg.db` package is installed and loaded, depending
+#' on the organism specified.
 #'
-#' - **Purpose**: Combines inchi-to-UniProt relationships with UniProt-to-Ensembl mappings.
-#' - **Parameters**:
-#'   - `relationships_inchi_to_uniprot`: A data frame containing inchi-to-UniProt relationships.
-#'   - `relationships_uniprot_to_ensembl`: A data frame containing UniProt-to-Ensembl mappings.
-#' - **Details**:
-#'   - Performs an outer join on the `UNIPROT` column to merge the two datasets.
-#'   - Ensures that all relationships are preserved, even if some entries are missing in one dataset.
-#' - **Returns**: A merged data frame containing inchi-to-Ensembl relationships.
+#' @examples
+#' \dontrun{
+#' # Example usage:
+#' rowdata_prot <- data.frame(matrix(ncol = 0, nrow = 5))
+#' rownames(rowdata_prot) <- c("P12345", "Q67890", "A11111", "B22222", "C33333")
+#' rowdata_trans <- data.frame(matrix(ncol = 0, nrow = 3))
+#' rownames(rowdata_trans) <- c("ENSG000001", "ENSG000002", "ENSG000003")
+#' 
+#' result <- build_uniprot_to_ensembl(rowdata_prot, rowdata_trans, organism = "Hs")
+#' print(result)
+#' }
+#'
+#' @importFrom AnnotationDbi select
 build_uniprot_to_ensembl <- function(rowdata_prot, rowdata_trans, organism) {
   # Create a new column in the data frame based on the keys_list
   # Choose the appropriate annotation database based on the organism
@@ -375,42 +410,4 @@ build_uniprot_to_ensembl <- function(rowdata_prot, rowdata_trans, organism) {
 
   # Filter the rows to keep only those with an Ensembl ID present in rownames(rowdata_trans)
   return(new_column[new_column$ENSEMBL %in% rownames(rowdata_trans), ])
-}
-
-# NOT USED
-add_inchi_ensembl_relationships <- function(relationships_inchi_to_uniprot, relationships_uniprot_to_ensembl) {
-  # Perform an outer join on the UNIPROT column
-  merged_relationships <- merge(
-    relationships_inchi_to_uniprot,
-    relationships_uniprot_to_ensembl,
-    by = "UNIPROT",
-    all = TRUE
-  )
-
-  return(merged_relationships)
-}
-
-inchi_relationships <- function(se_metabo, se_target, organism, get_ensembl = FALSE, get_uniprot = FALSE) {
-
-  # Throw an error if both get_ensembl and get_uniprot are FALSE
-  if (!get_ensembl && !get_uniprot) stop("Both get_ensembl and get_uniprot cannot be FALSE. At least one must be TRUE.")
-  # Check if get_uniprot or get_ensembl is TRUE and run check_type accordingly
-  if (get_uniprot) {
-    if (!check_uniprot(rownames(rowData(se_target)))) {
-      stop("UniProt check failed: Invalid UniProt IDs in the target data.")
-    }
-  }
-
-  if (get_ensembl) {
-    if (!check_ensembl(rownames(rowData(se_target)))) {
-      stop("Ensembl check failed: Invalid Ensembl IDs in the target data.")
-    }
-  }
-
-  # Build inchi relationships based on the provided SummarizedExperiment objects
-  build_inchi_relationships(rowData(se_metabo), rowData(se_target), get_ensembl = get_ensembl, get_uniprot = get_uniprot, organism)
-}
-
-uniprot_relationships <- function(se_uniprot, se_trans, organism) {
-  build_uniprot_to_ensembl(rowData(se_uniprot), rowData(se_trans), organism)
 }

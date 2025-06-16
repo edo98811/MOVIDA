@@ -4,11 +4,51 @@ source("modules/module_plot_container.R")
 
 mod_sidebar_overview_ui <- function(id) {
   ns <- NS(id)
-  uiOutput(ns("sidebar_ui_module")) # Placeholder for the sidebar UI
+  navset_pill(
+    nav_panel(
+      title = "Prot",
+      div(
+        div(class = "btn-group", role = "group",
+          tags$button(type = "Select", class = "btn btn-primary", "Left"),
+          tags$button(type = "Bookmark", class = "btn btn-primary", "Middle")
+        ),
+        uiOutput(ns("sidebar_ui_plots_prot")),
+      )
+    ),
+    nav_panel(
+      title = "Prot",
+      div(
+        div(class = "btn-group", role = "group",
+          tags$button(type = "Select", class = "btn btn-primary", "Left"),
+          tags$button(type = "Bookmark", class = "btn btn-primary", "Middle")
+        ),
+        uiOutput(ns("sidebar_ui_plots_prot")),
+      )
+    ),
+    nav_panel(
+      title = "Prot",
+      div(
+        div(class = "btn-group", role = "group",
+          tags$button(type = "Select", class = "btn btn-primary", "Left"),
+          tags$button(type = "Bookmark", class = "btn btn-primary", "Middle")
+        ),
+        uiOutput(ns("sidebar_ui_plots_prot")),
+      )
+    )
+  )
 }
 mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_source, movida_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+
+    # a pill con 3 tabs
+    # get related features always called for each navtab based on the selected feature
+    # it ereturns either the same feature or all the related ones
+    # i make a plot for each of the feature, with a button to add to bookmark and select the feature
+    #
+    #
+    #
+    #
 
     # Generate dynamic module IDs reactively and safely
     transcriptomics_id <- reactive({

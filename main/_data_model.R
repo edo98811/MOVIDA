@@ -115,7 +115,7 @@ MovidaModel <- R6Class("MovidaModel",
       private$se_trans <- movida_list$se_trans
       private$se_metabo <- movida_list$se_metabo
       private$organism <- movida_list$organism
-      self$build_relationships()
+      # self$build_relationships()
       private$determine_contrasts(movida_list)
     },
     build_relationships = function() {
@@ -186,87 +186,87 @@ MovidaModel <- R6Class("MovidaModel",
     },
     get_dea = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
       if (!is.character(source) || length(source) != 1) {
-      stop("Argument 'source' must be a single string.")
+        stop("Argument 'source' must be a single string.")
       }
       if (!is.character(contrast) || length(contrast) != 1) {
-      stop("Argument 'contrast' must be a single string.")
+        stop("Argument 'contrast' must be a single string.")
       }
 
       if (source == "proteomics") {
-      data <- private$results_prot[[contrast]]$tbl_res_all
+        data <- private$results_prot[[contrast]]$tbl_res_all
       } else if (source == "transcriptomics") {
-      data <- private$results_trans[[contrast]]$tbl_res_all
+        data <- private$results_trans[[contrast]]$tbl_res_all
       } else if (source == "metabolomics") {
-      data <- private$results_metabo[[contrast]]$tbl_res_all
+        data <- private$results_metabo[[contrast]]$tbl_res_all
       } else {
-      stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
 
       if (!is.null(FDRpvalue)) {
-      data <- data[data$FDRpvalue <= FDRpvalue, ]
+        data <- data[data$FDRpvalue <= FDRpvalue, ]
       }
       if (!is.null(FDRadj)) {
-      data <- data[data$FDRadj <= FDRadj, ]
-      if (!is.null(FDRpvalue)) {
-        warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on both criteria.")
-      }
+        data <- data[data$FDRadj <= FDRadj, ]
+        if (!is.null(FDRpvalue)) {
+          warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on both criteria.")
+        }
       }
       return(data)
     },
     get_fea = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
       if (!is.character(source) || length(source) != 1) {
-      stop("Argument 'source' must be a single string.")
+        stop("Argument 'source' must be a single string.")
       }
       if (!is.character(contrast) || length(contrast) != 1) {
-      stop("Argument 'contrast' must be a single string.")
+        stop("Argument 'contrast' must be a single string.")
       }
 
       if (source == "proteomics") {
-      data <- private$results_prot[[contrast]]$topGO_tbl
+        data <- private$results_prot[[contrast]]$topGO_tbl
       } else if (source == "transcriptomics") {
-      data <- private$results_trans[[contrast]]$topGO_tbl
+        data <- private$results_trans[[contrast]]$topGO_tbl
       } else if (source == "metabolomics") {
-      data <- private$results_metabo[[contrast]]$topGO_tbl
+        data <- private$results_metabo[[contrast]]$topGO_tbl
       } else {
-      stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
 
       if (!is.null(FDRpvalue)) {
-      data <- data[data$FDRpvalue <= FDRpvalue, ]
+        data <- data[data$FDRpvalue <= FDRpvalue, ]
       }
       if (!is.null(FDRadj)) {
-      data <- data[data$FDRadj <= FDRadj, ]
-      if (!is.null(FDRpvalue)) {
-        warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on FDRadj")
-      }
+        data <- data[data$FDRadj <= FDRadj, ]
+        if (!is.null(FDRpvalue)) {
+          warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on FDRadj")
+        }
       }
       if (!is.data.frame(data)) {
-      stop("The filtered data is not a data frame. Please check the input data structure.")
+        stop("The filtered data is not a data frame. Please check the input data structure.")
       }
       return(data)
     },
     get_values_all = function(source, return_se = FALSE) {
       # Validate that 'source' is a single string
       if (!is.character(source) || length(source) != 1) {
-      stop("Argument 'source' must be a single string.")
+        stop("Argument 'source' must be a single string.")
       }
 
       # Select the appropriate SummarizedExperiment object based on the source
       if (source == "proteomics") {
-      se <- private$se_prot
+        se <- private$se_prot
       } else if (source == "transcriptomics") {
-      se <- private$se_trans
+        se <- private$se_trans
       } else if (source == "metabolomics") {
-      se <- private$se_metabo
+        se <- private$se_metabo
       } else {
-      stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
 
       # Return the assay data or the SummarizedExperiment object based on 'return_se'
       if (return_se) {
-      return(assay(se)) # Return the assay data (matrix of values)
+        return(assay(se)) # Return the assay data (matrix of values)
       } else {
-      return(se) # Return the SummarizedExperiment object
+        return(se) # Return the SummarizedExperiment object
       }
     },
     get_related_features = function(feature, target) {
@@ -393,6 +393,17 @@ MovidaModel <- R6Class("MovidaModel",
       # Subset se_source based on the specified samples
       subset_indices <- colnames(se_source) %in% samples
       return(se_source[, subset_indices])
+    },
+    get_features_list = function(source) {
+      if (source == "proteomics") {
+        return(rownames(private$se_trans))
+      } else if (source == "transcriptomics") {
+        return(rownames(private$se_prot))
+      } else if (source == "metabolomics") {
+        return(rownames(private$se_metabo))
+      } else {
+        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      }
     }
   )
 )
