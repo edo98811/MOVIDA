@@ -19,18 +19,20 @@ mod_table_ui <- function(id, dashboard = FALSE, show_export_data_btn = FALSE, sh
 }
 
 # Server function
-mod_table_server <- function(id, main_table_function, selected_row) {
+mod_table_server <- function(id, main_table_function, selected_row, table_type = "default") {
   moduleServer(id, function(input, output, session) {
+    ns <- session$ns
 
     # Render the data table
     data <- reactive({
-      result <- main_table_function()
+      result <- as.data.frame(main_table_function())
       if (!is.data.frame(result)) {
-        stop(paste("Data type:", class(result)))
+        warning("Data is not a data frame - returning NULL")
+        return(NULL)
       }
       result
     })
-    
+
     # Observe row selection in the data table
     observeEvent(input$table_rows_selected, {
       selected <- input$table_rows_selected
@@ -42,21 +44,41 @@ mod_table_server <- function(id, main_table_function, selected_row) {
 
     # Check if 'data' is a data.frame (or tibble)
     output$table <- DT::renderDataTable({
-      DT::datatable(
-        data(),
-        selection = "single"
-        # extensions = "Buttons",
-        # options = list(
-        #   dom = "Bfrtip",
-        #   buttons = list(
-        #     list(
-        #       extend = "csv",
-        #       text = "Export CSV",
-        #       filename = paste0("data_", Sys.Date())
-        #     )
-        #   )
-        # )
-      )
+      if (is.null(data())) {
+        DT::datatable(data.frame())
+      } else if (table_type == "minimal") {
+        DT::datatable(
+          data(),
+          options = list(
+            deferRender = TRUE,
+            dom = "t",
+            scrollY = "400px",
+            paging = FALSE,
+            ordering = FALSE,
+            headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")
+          ),
+          rownames = FALSE,
+          colnames = NULL,
+          selection = "single", # Enable row selection,
+          class = "compact stripe"
+        )
+      } else {
+        DT::datatable(
+          data(),
+          selection = "single"
+          # extensions = "Buttons",
+          # options = list(
+          #   dom = "Bfrtip",
+          #   buttons = list(
+          #     list(
+          #       extend = "csv",
+          #       text = "Export CSV",
+          #       filename = paste0("data_", Sys.Date())
+          #     )
+          #   )
+          # )
+        )
+      }
     })
 
     # # Observe the export data button click

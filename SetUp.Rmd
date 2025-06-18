@@ -69,7 +69,7 @@ if (only_selected_contrast == TRUE) {
 }
 ```
 
-```{r, eval = F}
+```{r make-better-tables}
 colnames(annotation_df_trans) <- c("UNIPROT", "SYMBOL", "ENSEMBL")
 colnames(annotation_df_prot) <- c("UNIPROT", "SYMBOL", "ENSEMBL")
 
@@ -173,26 +173,27 @@ movida_list <- list(
 )
 ```
 
-```{r test movida-data}
+```{r test movida-data, eval = F}
 source("main/_data_model.R")
 assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
 ```
   
-```{r test movida-data}
+```{r test movida-data, eval = F}
 # test get inchi key
 source("main/data_model.R")
 uniprot_inchi_query(rownames(rowData(se_metabo))[[1]], get_ensembl = TRUE, get_uniprot = TRUE)
+
 ```
-```{r test movida-data}
+```{r test movida-data, eval = F}
 relationships1 <- movida_data$get_inchi_to_ensembl()
 relationships2 <- movida_data$get_inchi_to_uniprot()
 relationships3 <- movida_data$get_uniprot_to_ensembl()
 
-movida_data$save_relationships()
+movida_data$save_relationships("relationships")
 ```
 
 
 ```{r}
-source("main/app.R")
+source("main/_app.R")
 MovidaApp(movida_list)
 ```

@@ -1,7 +1,7 @@
 library("RColorBrewer")
 library("grDevices")
 
-gs_heatmap <- function(se,
+plot_heatmap_movida <- function(se,
                       #  mydata, is it just the count matrix?
                        res_enrich = NULL,
                        use_symbol = FALSE, # da togliere tutte le reference

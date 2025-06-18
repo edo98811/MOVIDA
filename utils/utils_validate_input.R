@@ -8,6 +8,16 @@ check_ensembl <- function(names_to_check) {
   return(TRUE)
 }
 
+# Function to check if rownames(rowData(se)) are of type Ensembl
+check_goterm <- function(names_to_check) {
+  invalid_names <- names_to_check[!grepl("^GO:[A-Z]*[0-9]+$", names_to_check)]
+  if (length(invalid_names) > 0) {
+    warning("Warning: The following rownames(rowData(se)) are not valid go-terms: ", paste(invalid_names, collapse = ", "))
+    return(FALSE)
+  }
+  return(TRUE)
+}
+
 # Function to check if rownames(rowData(se)) are of type ChEBI
 check_chebi <- function(names_to_check) {
   invalid_names <- names_to_check[!grepl("^CHEBI:[0-9]+$", names_to_check)]

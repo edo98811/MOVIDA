@@ -10,6 +10,7 @@ MovidaApp <- function(movida_list) {
   # Initialize the global data model
   # assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
   assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
+  movida_data$load_relationships("relationships/")
   
   # Wrap server to inject movida_data as argument
   server_wrapper <- function(input, output, session) {

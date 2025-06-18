@@ -73,6 +73,7 @@
 #' model <- MovidaModel$new(movida_list)
 #'
 library(R6)
+library(SummarizedExperiment)
 source("utils/utils_find_relationships.R")
 source("utils/utils_validate_input.R")
 
@@ -90,7 +91,7 @@ MovidaModel <- R6Class("MovidaModel",
     uniprot_to_ensembl = NULL,
     organism = NULL,
     determine_contrasts = function(movida_list) {
-      if (!"contrasts" %in% names(movida_list)) {
+      if (!"contrasts" %in% names(movida_list) || is.null(movida_list$contrasts)) {
         private$contrasts <- union(
           names(movida_list$results_prot),
           union(
@@ -159,6 +160,7 @@ MovidaModel <- R6Class("MovidaModel",
       private$inchi_to_ensembl <- readRDS(file.path(folder_path, "inchi_to_ensembl.rds"))
       private$inchi_to_uniprot <- readRDS(file.path(folder_path, "inchi_to_uniprot.rds"))
       private$uniprot_to_ensembl <- readRDS(file.path(folder_path, "uniprot_to_ensembl.rds"))
+      return(invisible(TRUE))
     },
     save_relationships = function(folder_path) {
       if (!is.character(folder_path) || length(folder_path) != 1) {
@@ -264,9 +266,9 @@ MovidaModel <- R6Class("MovidaModel",
 
       # Return the assay data or the SummarizedExperiment object based on 'return_se'
       if (return_se) {
-        return(assay(se)) # Return the assay data (matrix of values)
+        return(se) # Return the assay data (matrix of values)
       } else {
-        return(se) # Return the SummarizedExperiment object
+        return(assay(se)) # Return the SummarizedExperiment object
       }
     },
     get_related_features = function(feature, target) {
@@ -275,7 +277,7 @@ MovidaModel <- R6Class("MovidaModel",
       }
 
       # Validate that the features are of a recognized type (Ensembl, inchi, or UniProt)
-      if (!check_ensembl(c(feature)) && !check_inchi(c(feature)) && !check_uniprot(c(feature))) {
+      if (!suppressWarnings(check_ensembl(c(feature))) && !suppressWarnings(check_inchi(c(feature))) && !suppressWarnings(check_uniprot(c(feature)))) {
         stop("Error: rownames(rowData(se)) must be of type Ensembl, inchi, or UniProt.")
       }
 
@@ -285,29 +287,29 @@ MovidaModel <- R6Class("MovidaModel",
       }
 
       # Return the related features based on the target type
-      if (check_ensembl(c(feature))) {
-        if (target == "uniprot") {
-          return(private$uniprot_to_ensembl_dataframe[private$uniprot_to_ensembl_dataframe$ENSEMBL %in% feature, , drop = FALSE]$UNIPROT)
-        } else if (target == "ensembl") {
+      if (suppressWarnings(check_ensembl(c(feature)))) {
+        if (target == "proteomics") {
+          return(private$uniprot_to_ensembl[private$uniprot_to_ensembl$ENSEMBL %in% feature, , drop = FALSE]$UNIPROT)
+        } else if (target == "transcriptomics") {
           return(c(feature)) # Ensembl to Ensembl is a direct match
-        } else if (target == "inchi") {
-          return(private$inchi_to_ensembl[private$inchi_to_ensembl$ENSEMBL %in% feature, , drop = FALSE]$inchi)
+        } else if (target == "metabolomics") {
+          return(private$inchi_to_ensembl[private$inchi_to_ensembl$ENSEMBL %in% feature, , drop = FALSE]$INCHIKEY)
         }
-      } else if (check_inchi(c(feature))) {
-        if (target == "uniprot") {
-          return(private$inchi_to_uniprot[private$inchi_to_uniprot$inchi %in% feature, , drop = FALSE]$UNIPROT)
-        } else if (target == "ensembl") {
-          return(private$inchi_to_ensembl[private$inchi_to_ensembl$inchi %in% feature, , drop = FALSE]$ENSEMBL)
-        } else if (target == "inchi") {
+      } else if (suppressWarnings(check_inchi(c(feature)))) {
+        if (target == "proteomics") {
+          return(private$inchi_to_uniprot[private$inchi_to_uniprot$INCHIKEY %in% feature, , drop = FALSE]$UNIPROT)
+        } else if (target == "transcriptomics") {
+          return(private$inchi_to_ensembl[private$inchi_to_ensembl$INCHIKEY %in% feature, , drop = FALSE]$ENSEMBL)
+        } else if (target == "metabolomics") {
           return(c(feature)) # inchi to inchi is a direct match
         }
-      } else if (check_uniprot(c(feature))) {
-        if (target == "uniprot") {
+      } else if (suppressWarnings(check_uniprot(c(feature)))) {
+        if (target == "proteomics") {
           return(c(feature)) # UniProt to UniProt is a direct match
-        } else if (target == "ensembl") {
-          return(private$uniprot_to_ensembl_dataframe[private$uniprot_to_ensembl_dataframe$UNIPROT %in% feature, , drop = FALSE]$ENSEMBL)
-        } else if (target == "inchi") {
-          return(private$inchi_to_uniprot[private$inchi_to_uniprot$UNIPROT %in% feature, , drop = FALSE]$inchi)
+        } else if (target == "transcriptomics") {
+          return(private$uniprot_to_ensembl[private$uniprot_to_ensembl$UNIPROT %in% feature, , drop = FALSE]$ENSEMBL)
+        } else if (target == "metabolomics") {
+          return(private$inchi_to_uniprot[private$inchi_to_uniprot$UNIPROT %in% feature, , drop = FALSE]$INCHIKEY)
         }
       }
     },
@@ -396,20 +398,20 @@ MovidaModel <- R6Class("MovidaModel",
     },
     get_features_list = function(source) {
       if (source == "proteomics") {
-        return(rownames(private$se_trans))
+        return(as.data.frame(rownames(private$se_prot)))
       } else if (source == "transcriptomics") {
-        return(rownames(private$se_prot))
+        return(as.data.frame(rownames(private$se_trans)))
       } else if (source == "metabolomics") {
-        return(rownames(private$se_metabo))
+        return(as.data.frame(rownames(private$se_metabo)))
       } else {
         stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
     },
     get_metadata_columns = function(source) {
       if (source == "proteomics") {
-        return(colnames(private$se_trans))
-      } else if (source == "transcriptomics") {
         return(colnames(private$se_prot))
+      } else if (source == "transcriptomics") {
+        return(colnames(private$se_trans))
       } else if (source == "metabolomics") {
         return(colnames(private$se_metabo))
       } else {

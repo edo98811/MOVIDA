@@ -115,8 +115,7 @@ plot_expression_for_transcriptomics <- function(entity, se_object, anno_df, use_
 }
 
 
-plot_expression <- function(entity, se_object, export_data = FALSE, data_type = "unknown", group_var = "group") {
-
+plot_expression_movida <- function(entity, se_object, export_data = FALSE, data_type = "unknown", group_var = "group") {
   # Use count matrix from SummarizedExperiment if not provided
 
   count_matrix <- assays(se_object)$counts
@@ -145,11 +144,11 @@ plot_expression <- function(entity, se_object, export_data = FALSE, data_type = 
   display_name <- entity
 
   # Determine background color based on data type
-  if (data_type == "proteomics") {
+  if (check_uniprot(entity)) {
     bg_color <- "#ffe9e9" # Light red for proteomics
-  } else if (data_type == "transcriptomics") {
+  } else if (check_ensembl(entity)) {
     bg_color <- "#e8f8fe" # Light blue for transcriptomics
-  } else if (data_type == "metabolomics") {
+  } else if (check_inchi(entity)) {
     bg_color <- "#ffffdd" # Light yellow for metabolomics
   }
 

@@ -1,38 +1,36 @@
 library(shiny)
 source("functions/plot_expression.R")
-source("utils/export_functions.R")
+source("utils/utils_export_functions.R")
 library(shinyFiles)
 # UI function
-mod_plot_ui <- function(id, title = "Plot Module", show_export_data_btn = TRUE, show_export_plot_btn = TRUE, show_export_code_btn = TRUE) {
+mod_plot_ui <- function(id, title = "Pinned Plot", show_export_data_btn = TRUE, show_export_plot_btn = TRUE, show_export_code_btn = TRUE) {
   ns <- NS(id)
 
   # btns <- list(
   #   uiOutput(ns("dashboard_buttons")),
   # )
-  navset_card_tab(
-    # title = title,
-    nav_item(
+
+  page_fillable(
+    div(
+      style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;",
+      tags$h4(title, style = "margin: 0;"),
       uiOutput(ns("dashboard_buttons_small"))
     ),
-    nav_spacer(),
-    nav_panel(
-      "Plot",
-      plotOutput(ns("plot"))
-    ),
-    nav_panel(
-      "Actions",
-      # uiOutput(ns("dashboard_buttons")),
+    plotOutput(ns("plot")),
+    div(
+      class = "btn-group w-100 py-2", role = "group",
+      # style = "margin-top: 10px; display: flex; gap: 5px;",
       if (show_export_data_btn) {
-        downloadButton(ns("btn_export_data"), "Export Data") # , class = "btn-sm")
+        downloadButton(ns("btn_export_data"), "Data", class = "btn-sm", style = "flex: 1; height: 35px;", title = "Export Data")
       },
       if (show_export_plot_btn) {
-        layout_columns(
-          downloadButton(ns("btn_export_plot_svg"), "Export SVG"), # , class = "btn-sm"),
-          downloadButton(ns("btn_export_plot_png"), "Export PNG") # , class = "btn-sm")
+        page_fillable(
+          downloadButton(ns("btn_export_plot_svg"), "SVG", class = "btn-sm", style = "flex: 1; height: 35px;", title = "Export SVG"),
+          downloadButton(ns("btn_export_plot_png"), "PNG", class = "btn-sm", style = "flex: 1; height: 35px;", title = "Export PNG")
         )
       },
       if (show_export_code_btn) {
-        downloadButton(ns("btn_export_code"), "Export Code") # , class = "btn-sm")
+        downloadButton(ns("btn_export_code"), "Code", class = "btn-sm", style = "flex: 1; height: 35px;", title = "Export Code")
       }
     )
   )
