@@ -344,6 +344,40 @@ MovidaModel <- R6Class("MovidaModel",
       # Return the assay data for the specified features
       return(assay(se)[features, , drop = FALSE])
     },
+    get_pathway_features = function(pathway, contrast, source) {
+      # Validate that 'pathway' is a single string
+      if (!is.character(pathway) || length(pathway) != 1) {
+        stop("Argument 'pathway' must be a single string.")
+      }
+
+      # Select the appropriate SummarizedExperiment object based on the source
+      if (source == "proteomics") {
+        se <- private$se_prot
+        res <- private$results_prot
+      } else if (source == "transcriptomics") {
+        se <- private$se_trans
+        res <- private$results_trans
+      } else if (source == "metabolomics") {
+        se <- private$se_metabo
+        res <- private$results_metabo
+      } else {
+        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      }
+      enrich_res <- self$get_fea(source, contrast)
+
+
+      # Check that it respects DeeDee standard!!
+      thisset_name <- enrich_res[pathway, "gs_description"] # substitute to have the standard in deedee
+      thisset_members <- unlist(strsplit(res_enrich[geneset_id, "gs_genes"], ","))
+      # thisset_members_ens <- rowData(se)$ENSEMBL[match(thisset_members, rowData(se)$SYMBOL)]
+
+      if (is.na(thisset_name) || is.na(thisset_members_ens)) {
+        warning("Pathway not found in enrichment results or no members associated with it. Check logic.")
+        return(c(""))
+      }
+
+      return(thisset_members)
+    },
     get_values_group = function(groups, source) {
       # Check if 'groups' is a vector of strings
       if (!is.character(groups) || !is.vector(groups)) {
