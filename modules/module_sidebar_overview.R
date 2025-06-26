@@ -73,9 +73,11 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
           })
         })
         lapply(sources, function(source) {
-          req(selected_row_source$selected)
+          req(selected_row_source)
 
-          feature <- selected_row_source$selected
+          pathway <- selected_row_source$selected
+          source <- selected_row_source$source
+          contrast <- selected_row_source$contrast
 
           # observe event for select filtering column
           observeEvent(input[[ns(paste0("group_column_", source))]], {
@@ -92,12 +94,18 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
             paste0("source_", source, ";feature_", feature)
           })
 
-          plot_function <- function() {
+          plot_function <- function(export_data = FALSE) {
+            features <- movida_data$get_features_pathway(pathway, contrast, source)
+            se <- movida_data$get_values_all(source, return_se = TRUE)
+
             plot_heatmap_movida(
-              movida_data$get_values(source, return_se = TRUE),
-              geneset_id = feature
+              se,
+              features,
+              row_column = "SYMBOL"
+              export_data = export_data
             )
           }
+          
           # Set up plot server logic for this feature
           mod_plot_server(
             id = paste0("heatmap_", feature),

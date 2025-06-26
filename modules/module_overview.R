@@ -71,7 +71,9 @@ mod_overview_ui <- function(id) {
           div(
             br(),
             h4(sources[[source]]),
-            textInput(ns(paste0("feature_", source, "_search_box")), label = "Search:", placeholder = "Type to search..."),
+            div(style = "",
+              textInput(ns(paste0("feature_", source, "_search_box")), label = "Search feature", placeholder = "Type to search...")
+            ),
             mod_table_ui(ns(paste0("feature_", source)))
           )
         })
