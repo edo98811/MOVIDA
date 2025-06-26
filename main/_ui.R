@@ -18,7 +18,7 @@ ui <- page_fillable(
       title = "Overview",
       uiOutput("selected_feature"), # Placeholder for the sidebar UI
       layout_sidebar(
-        sidebar = sidebar(uiOutput("sidebar_ui"), width = 450, position = "right"), # dynamically rendered sidebar
+        sidebar = sidebar(uiOutput("sidebar_ui"), width = 460, position = "right"), # dynamically rendered sidebar
         mod_overview_ui("overview")
       )
     ),

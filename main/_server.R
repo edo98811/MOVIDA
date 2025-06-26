@@ -19,13 +19,13 @@ server <- function(input, output, session, movida_data) {
   output$selected_feature <- renderUI({
     if (!is.null(selected_row_source$selected)) {
       div(
-        style = "background-color: rgba(0, 128, 0, 0.8); height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 20px 20px; color: white;",
+        style = "background-color: rgba(0, 128, 0, 0.8); height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 20px 20px; color: white;",
         span(
           paste("Selected feature:", selected_row_source$selected, "from", selected_row_source$source)
         ),
         div(
           style = "margin-left: auto;",  # Push the button to the right
-          actionButton("add_to_bookmarks", "Add to Bookmarks", style = "background-color: white; color: green; border: none;")
+          actionButton("add_to_bookmarks", "Add to Bookmarks", style = "background-color: white; color: green; border: none; padding: 5px 10px; height: 30px;")
         ),
         hr()
       )
