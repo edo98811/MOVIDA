@@ -70,8 +70,31 @@ if (only_selected_contrast == TRUE) {
 ```
 
 ```{r make-better-tables}
+# Merge annotation data with rowData of respective SummarizedExperiment objects
 colnames(annotation_df_trans) <- c("UNIPROT", "SYMBOL", "ENSEMBL")
 colnames(annotation_df_prot) <- c("UNIPROT", "SYMBOL", "ENSEMBL")
+
+
+# Merge annotation_df_trans with rowData of se_trans
+if (!is.null(se_trans) && !is.null(annotation_df_trans)) {
+  # Convert to data.frame (if not already)
+  rd <- as.data.frame(rowData(se_trans))
+  
+  # Add rownames as a column to join on
+  rd$ENSEMBL <- rownames(rd)
+  
+  # Perform left join
+  merged <- merge(rd, annotation_df_trans, by = "ENSEMBL", all.x = TRUE)
+  
+  # Restore rownames after merge
+  rownames(merged) <- merged$ENSEMBL
+  
+  # Optionally drop the join column if not needed
+  merged$ENSEMBL <- NULL
+  
+  # Assign back to rowData
+  rowData(se_trans) <- merged
+}
 
 round_results_tables <- function(results_list) {
   lapply(results_list, function(result) {
@@ -82,6 +105,9 @@ round_results_tables <- function(results_list) {
         })
         if ("tbl_res_all" %in% names(result)) {
           df <- df[, !(names(df) %in% c("CI.I", "CI.L"))]
+        }
+        if ("topGO_tbl" %in% names(result) && "GO.ID" %in% names(df)) {
+          rownames(df) <- df$GO.ID
         }
       }
       df
@@ -184,6 +210,7 @@ source("main/data_model.R")
 uniprot_inchi_query(rownames(rowData(se_metabo))[[1]], get_ensembl = TRUE, get_uniprot = TRUE)
 
 ```
+
 ```{r test movida-data, eval = F}
 relationships1 <- movida_data$get_inchi_to_ensembl()
 relationships2 <- movida_data$get_inchi_to_uniprot()
