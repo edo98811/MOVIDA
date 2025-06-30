@@ -152,6 +152,8 @@ plot_expression_movida <- function(entity, se_object, export_data = FALSE, data_
     bg_color <- "#ffffdd" # Light yellow for metabolomics
   }
 
+  # plotting_data <- plotting_data[order(plotting_data$group), ]
+
   # Export the plotting data if requested
   if (export_data) {
     return(plotting_data)
