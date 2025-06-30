@@ -1,5 +1,6 @@
 library(shiny)
 source("functions/plot_expression.R")
+source("functions/plot_heatmap.R")
 source("modules/module_plot_container.R")
 
 mod_sidebar_overview_ui <- function(id) {
@@ -28,7 +29,6 @@ mod_sidebar_overview_ui <- function(id) {
       })
     )
   )
-
 }
 mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_source, movida_data) {
   moduleServer(id, function(input, output, session) {
@@ -40,31 +40,38 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
     # is it maybe not necessary? can i keep it in the ui?
     observeEvent(selected_row_source$selected, {
       if (suppressWarnings(check_goterm(selected_row_source$selected))) {
+        #
+        titles <- c(
+          transcriptomics = "Pathway Genes Expression",
+          proteomics = "Protein Abundance",
+          metabolomics = "Metabolite Abundance"
+        )
+        # sidebar with the heatmaps
         lapply(sources, function(source) {
-          output[[ns(paste0("sidebar_ui_plots_", source))]] <- renderUI({
+          output[[paste0("sidebar_ui_plots_", source)]] <- renderUI({
             req(selected_row_source$selected)
-            related_features <- movida_data$get_all_features(source)
+            pathway <- selected_row_source$selected
 
-            # return UI elements for filtering
+            # return UI el  ements for filtering
             div(
               class = "filter-controls mb-3",
-              selectInput(
-                ns(paste0("group_column_", source)),
-                "Group by:",
-                choices = movida_data$get_metadata_columns(),
-                selected = "condition"
-              ),
-              checkboxInput(
-                ns(paste0("selected_contrasts_only_", source)),
-                "Show only selected contrasts",
-                value = FALSE
-              ),
-              div(
-                class = "btn-group", role = "group",
-                tags$button(id = ns(paste0("bookmark_all", feature)), type = "button", class = "btn btn-primary", "Bookmark")
-              ),
+              # selectInput(
+              #   ns(paste0("group_column_", source)),
+              #   "Group by:",
+              #   choices = movida_data$get_metadata_columns(source),
+              #   selected = "condition"
+              # ),
+              # checkboxInput(
+              #   ns(paste0("selected_contrasts_only_", source)),
+              #   "Show only selected contrasts",
+              #   value = FALSE
+              # ),
+              # div(
+              #   class = "btn-group", role = "group",
+              #   tags$button(id = ns(paste0("bookmark_all", pathway)), type = "button", class = "btn btn-primary", "Bookmark")
+              # ),
               mod_plot_ui(
-                id = ns(paste0(source, "_plot_", feature)),
+                id = ns(paste0(source, "_heatmap_", gsub(":", "", pathway))),
                 title = titles[[source]],
                 show_export_data_btn = TRUE,
                 show_export_plot_btn = TRUE
@@ -72,11 +79,12 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
             )
           })
         })
+        # SERVER LOGIC -------
         lapply(sources, function(source) {
           req(selected_row_source)
 
           pathway <- selected_row_source$selected
-          source <- selected_row_source$source
+          # source <- selected_row_source$source
           contrast <- selected_row_source$contrast
 
           # observe event for select filtering column
@@ -91,35 +99,40 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
 
           # Plot id for the heatmap
           plot_id <- reactive({
-            paste0("source_", source, ";feature_", feature)
+            paste0("source_", source, ";feature_", pathway)
           })
 
           plot_function <- function(export_data = FALSE) {
-            features <- movida_data$get_features_pathway(pathway, contrast, source)
+            features <- movida_data$get_pathway_features(pathway, contrast, source)
             se <- movida_data$get_values_all(source, return_se = TRUE)
 
             plot_heatmap_movida(
               se,
               features,
-              row_column = "SYMBOL"
+              row_column = "SYMBOL",
               export_data = export_data
             )
           }
-          
+
           # Set up plot server logic for this feature
           mod_plot_server(
-            id = paste0("heatmap_", feature),
-            plot_id = (plot_id()),
+            id = paste0(source, "_heatmap_", gsub(":", "", pathway)),
+            plot_id = plot_id(),
             main_plotting_function = plot_function,
             dashboard_elements = dashboard_elements
           )
         })
-      } else { # sidebar with geneplots
+      } else if (
+        check_ensembl(selected_row_source$selected) ||
+          check_inchi(selected_row_source$selected) ||
+          check_uniprot(selected_row_source$selected)) {
         titles <- c(
           transcriptomics = "Gene Expression",
           proteomics = "Protein Abundance",
           metabolomics = "Metabolite Abundance"
         )
+        # sidebar with geneplots
+
         # Module: Sidebar Overview
         #
         # This module creates a tabbed interface (pill) with 3 tabs. It's responsible for:
@@ -204,7 +217,6 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
 
         lapply(sources, function(source) {
           req(selected_row_source$selected)
-
           related_features <- movida_data$get_related_features(selected_row_source$selected, source)
 
           # observe event for select filtering column

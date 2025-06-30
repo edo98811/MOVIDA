@@ -242,9 +242,6 @@ MovidaModel <- R6Class("MovidaModel",
           warning("Both FDRpvalue and FDRadj are set. Filtering will be applied based on FDRadj")
         }
       }
-      if (!is.data.frame(data)) {
-        stop("The filtered data is not a data frame. Please check the input data structure.")
-      }
       return(data)
     },
     get_values_all = function(source, return_se = FALSE) {
@@ -278,7 +275,7 @@ MovidaModel <- R6Class("MovidaModel",
 
       # Validate that the features are of a recognized type (Ensembl, inchi, or UniProt)
       if (!suppressWarnings(check_ensembl(c(feature))) && !suppressWarnings(check_inchi(c(feature))) && !suppressWarnings(check_uniprot(c(feature)))) {
-        stop("Error: rownames(rowData(se)) must be of type Ensembl, inchi, or UniProt.")
+        stop("Error:get_related_features, features must be of type Ensembl, inchi, or UniProt.")
       }
 
       # Check if 'target' is a single string
@@ -353,28 +350,27 @@ MovidaModel <- R6Class("MovidaModel",
       # Select the appropriate SummarizedExperiment object based on the source
       if (source == "proteomics") {
         se <- private$se_prot
-        res <- private$results_prot
+        # res <- private$results_prot
       } else if (source == "transcriptomics") {
         se <- private$se_trans
-        res <- private$results_trans
+        # res <- private$results_trans
       } else if (source == "metabolomics") {
         se <- private$se_metabo
-        res <- private$results_metabo
+        # res <- private$results_metabo
       } else {
         stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
       enrich_res <- self$get_fea(source, contrast)
 
-
       # Check that it respects DeeDee standard!!
-      thisset_name <- enrich_res[pathway, "gs_description"] # substitute to have the standard in deedee
-      thisset_members <- unlist(strsplit(res_enrich[geneset_id, "gs_genes"], ","))
+      # thisset_name <- enrich_res[pathway, "Term"] # substitute to have the standard in deedee
+      thisset_members <- unlist(strsplit(enrich_res[pathway, "genes"], ","))
       # thisset_members_ens <- rowData(se)$ENSEMBL[match(thisset_members, rowData(se)$SYMBOL)]
 
-      if (is.na(thisset_name) || is.na(thisset_members_ens)) {
-        warning("Pathway not found in enrichment results or no members associated with it. Check logic.")
-        return(c(""))
-      }
+      # if (is.na(thisset_name) || is.na(thisset_members_ens)) {
+      #   warning("Pathway not found in enrichment results or no members associated with it. Check logic.")
+      #   return(c(""))
+      # }
 
       return(thisset_members)
     },

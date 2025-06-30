@@ -15,11 +15,12 @@ plot_heatmap_movida <- function(se,
                                 plot_title = NULL,
                                 export_data = FALSE,
                                 ...) {
+                                  
   # parameters check
   if (is.null(features) || length(features) == 0) {
     stop("features cannot be empty or NULL")
   }
- 
+  
   if (!is.null(winsorize_threshold)) {
     stopifnot(is.numeric(winsorize_threshold))
     stopifnot(winsorize_threshold >= 0)
@@ -89,13 +90,14 @@ plot_heatmap_movida <- function(se,
     rect_gp = grid::gpar(col = "white", lwd = 0.5),
     cluster_rows = cluster_rows,
     cluster_columns = cluster_columns,
-    row_labels = ifelse(use_symbol && !is.null(rowData(se)$SYMBOL),
-      rowData(se)$SYMBOL[match(rownames(heatmap_data), rownames(rowData(se)))],
-      rownames(heatmap_data)
-    ),
+    row_labels = rownames(heatmap_data),
+    # row_labels = ifelse(use_symbol && !is.null(rowData(se)$SYMBOL),
+    #   rowData(se)$SYMBOL[match(rownames(heatmap_data), rownames(rowData(se)))],
+    #   rownames(heatmap_data)
+    # ),
     ...
   )
-  
+
   return(ComplexHeatmap::draw(ch, merge_legend = TRUE))
   # return(ch)
 }
