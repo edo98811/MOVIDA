@@ -1,7 +1,3 @@
-library(shiny)
-library(gargoyle)
-
-source("modules/module_table_container.R")
 
 # UI function for the module
 mod_overview_ui <- function(id) {

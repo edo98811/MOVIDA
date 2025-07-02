@@ -1,4 +1,3 @@
-library(R6)
 
 MovidaModel <- R6Class("MovidaModel",
   private = list(

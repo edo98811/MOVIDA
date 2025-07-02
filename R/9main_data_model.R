@@ -1,3 +1,4 @@
+#' @name MovidaModel
 #' @title MovidaModel Class
 #' @description An R6 class for managing and analyzing multi-omics data.
 #' @details The `MovidaModel` class provides methods for initializing, processing,
@@ -6,6 +7,20 @@
 #' includes functionality for filtering and retrieving data based on
 #' specific criteria.
 #'
+#' @section Imports:
+#' This class requires the following functions and packages:
+#' - `R6::R6Class`
+#' - `SummarizedExperiment::SummarizedExperiment`, `rowData`, `colData`, `assay`
+#' - `future::plan`, `future::multisession`, `future::sequential`
+#' - `parallel::detectCores`
+#' - `readRDS`, `saveRDS`
+#' - Internal functions: `build_inchi_relationships`, `build_uniprot_to_ensembl`, `check_movida_list`, `check_ensembl`, `check_inchi`, `check_uniprot`
+#'
+#' @importFrom R6 R6Class
+#' @importFrom SummarizedExperiment SummarizedExperiment rowData colData assay
+#' @importFrom future plan multisession sequential
+#' @importFrom parallel detectCores
+#' @importFrom methods is
 #' @section Private Fields:
 #' \describe{
 #'   \item{results_prot}{Results from proteomics analysis.}
@@ -71,12 +86,7 @@
 #'   organism = "Hs"
 #' )
 #' model <- MovidaModel$new(movida_list)
-#'
-library(R6)
-library(SummarizedExperiment)
-source("utils/utils_find_relationships.R")
-source("utils/utils_validate_input.R")
-
+#' @export
 MovidaModel <- R6Class("MovidaModel",
   private = list(
     results_prot = NULL,
@@ -269,6 +279,7 @@ MovidaModel <- R6Class("MovidaModel",
       }
     },
     get_related_features = function(feature, target) {
+
       if (!is.character(c(feature))) {
         stop("Argument 'features' must be a vector of strings.")
       }
@@ -380,6 +391,7 @@ MovidaModel <- R6Class("MovidaModel",
       if (is.null(subset)) return(self$get_values_all(source, return_se))
 
       if (!is.character(subset) || !is.vector(subset)) {
+        browser()
         stop("Argument 'subset' must be a vector of strings.")
       }
 

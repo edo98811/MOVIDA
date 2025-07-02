@@ -1,0 +1,35 @@
+Package: MovidaApp
+Type: Package
+Title: Container for the Movida App
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Edoardo", "Filippi",
+      email = "edoardo.filippi@uni-mainz.de",
+      role = c("aut", "cre")
+    )
+  )
+Description: Application to explore multiomics datasets.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports:
+    shiny,
+    RColorBrewer,
+    grDevices,
+    bslib,
+    R6,
+    DT,
+    AnnotationDbi,
+    org.Hs.eg.db,
+    org.Mm.eg.db,
+    SummarizedExperiment,
+    httr2,
+    jsonlite,
+    future,
+    furrr,
+    progressr,
+    ggplot2,
+    ggforce
+RoxygenNote: 7.3.2
+

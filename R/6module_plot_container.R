@@ -1,7 +1,4 @@
-library(shiny)
-source("functions/plot_expression.R")
-source("utils/utils_export_functions.R")
-library(shinyFiles)
+
 # UI function
 mod_plot_ui <- function(id, title = "Pinned Plot", show_export_data_btn = TRUE, show_export_plot_btn = TRUE, show_export_code_btn = TRUE) {
   ns <- NS(id)

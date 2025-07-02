@@ -1,10 +1,11 @@
-library(shiny)
-library(gargoyle)
 
-source("modules/module_table_container.R")
+# DRAFT -------
+
+
+
 
 # UI function for the module
-mod_overview_ui <- function(id) {
+mod_plotting_ui <- function(id) {
   ns <- NS(id) # Namespace for the module
 
   sources <- c(
@@ -28,7 +29,7 @@ mod_overview_ui <- function(id) {
   )
 }
 
-mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_data) {
+mod_plotting_server <- function(id, dashboard_elements, row_to_select, movida_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     sources <- c("transcriptomics", "proteomics", "metabolomics")

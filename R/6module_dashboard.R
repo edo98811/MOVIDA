@@ -1,5 +1,3 @@
-source("modules/module_plot_container.R")
-
 
 # Module for Overview Dashboard with Grid Rendering
 mod_dashboard_ui <- function(id) {

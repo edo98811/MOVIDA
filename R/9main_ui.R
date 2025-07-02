@@ -1,14 +1,8 @@
-library(shiny)
-library(bslib)
-library(gargoyle)
 
-source("modules/module_dashboard.R")
-source("modules/module_overview.R")
-source("modules/module_sidebar_overview.R")
 
 ui <- page_fillable(
   title = "MOVIDApp",
-  theme = bs_theme(version = 5, brand = "_brand.yml"),
+  theme = bs_theme(version = 5, brand = "inst/extdata/_brand.yml"),
   page_navbar(
     title = "MOVIDA",
     navbar_options = navbar_options(

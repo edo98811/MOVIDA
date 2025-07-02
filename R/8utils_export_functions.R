@@ -25,7 +25,7 @@ export_code <- function(code, id) {
   assignments <- strsplit(id, ";")[[1]]
   
   # Define the initial variable definitions
-  var_def <- "library(MOVIDA)\nmovida_data <- MOVIDA::movida_data(movida_list)\n\n"
+  var_def <- "(MOVIDA)\nmovida_data <- MOVIDA::movida_data(movida_list)\n\n"
   
   # Process each assignment and generate variable definitions
   var_def <- paste(var_def, paste(sapply(assignments, function(assignment) {

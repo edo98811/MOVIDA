@@ -1,7 +1,4 @@
 
-
-library(webchem)
-
 # Function to get ChEBI IDs from a list of InChIKeys
 get_chebi_id_from_inchikey <- function(inchikey_list) {
 

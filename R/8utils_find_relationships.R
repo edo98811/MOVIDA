@@ -1,12 +1,3 @@
-# Import relevant libraries
-library(AnnotationDbi)
-library(org.Hs.eg.db)
-library(org.Mm.eg.db)
-library(httr2)
-library(jsonlite)
-library(future)
-library(furrr)
-library(progressr)
 
 # List of functions in this file:
 # 1. uniprot_inchi_query_async: Asynchronously queries UniProt for multiple inchi IDs and filters results based on target data.

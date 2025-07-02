@@ -1,7 +1,4 @@
-library(shiny)
-library(DT)
-
-# UI function
+#  UI function
 mod_table_ui <- function(id, dashboard = FALSE, show_export_data_btn = FALSE, show_export_plot_btn = FALSE) {
   ns <- NS(id)
 

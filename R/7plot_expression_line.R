@@ -1,4 +1,22 @@
-plot_expression_movida_line <- function(entities, se_object, group_var = "group", export_data = FALSE, data_type = "unknown") {
+#' Plot Average Expression Line Plot for Selected Entities
+#'
+#' This function generates a line plot showing the average expression of selected entities (e.g., genes) across groups from a \code{SummarizedExperiment} object. It can also export the underlying plotting data if requested.
+#'
+#' @param entities A character vector of entity names (e.g., gene symbols) to plot.
+#' @param se_object A \code{SummarizedExperiment} object containing the expression data and sample metadata.
+#' @param group_var A character string specifying the column name in \code{colData(se_object)} to use for grouping samples. Default is \code{"group"}.
+#' @param export_data Logical; if \code{TRUE}, the function returns the data used for plotting instead of the plot. Default is \code{FALSE}.
+#' @param data_type A character string indicating the type of data (for annotation purposes). Default is \code{"unknown"}.
+#'
+#' @return A \code{ggplot} object showing the average expression per entity across groups, or a data frame with the plotting data if \code{export_data = TRUE}. If none of the entities are found, returns a plot with a warning message.
+#'
+#' @details
+#' The function checks which entities are present in the count matrix of the provided \code{SummarizedExperiment} object. It calculates the average expression for each entity within each group and plots the results as lines. If any entities are missing, a warning is issued.
+#'
+#' @import ggplot2
+#' @importFrom SummarizedExperiment assays colData
+#' @export
+plot_expression_line_movida <- function(entities, se_object, group_var = "group", export_data = FALSE, data_type = "unknown") {
   # Use count matrix from SummarizedExperiment
   count_matrix <- assays(se_object)$counts
 
@@ -17,7 +35,8 @@ plot_expression_movida_line <- function(entities, se_object, group_var = "group"
         label = "No entities found in data",
         size = 6, hjust = 0.5, vjust = 0.5
       ) +
-      theme_void())
+      theme_void()
+    )
   }
 
   # Extract expression data for existing entities

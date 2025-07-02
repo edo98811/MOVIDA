@@ -1,8 +1,3 @@
-library(shiny)
-source("functions/plot_expression.R")
-source("functions/plot_heatmap.R")
-source("modules/module_plot_container.R")
-
 mod_sidebar_overview_ui <- function(id) {
   ns <- NS(id)
   # here i want a navset pill with the three type of omics, i want to see as many plots as there are related features for each type
@@ -157,6 +152,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
             list(
               div(
                 class = "filter-controls mb-3",
+                br(),
                 selectInput(
                   ns(paste0("group_column_", source)),
                   "Group by:",
@@ -228,6 +224,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
             }
           })
 
+          # Observe the group column selection and update the subset group choices
           observe({
             selected_group_col <- input[[paste0("group_column_", source)]]
             req(selected_group_col)
@@ -243,9 +240,12 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
           # For each related feature, set up the select and bookmark button observers
           # Then create the plotting function, call the plot_module server
           lapply(related_features, function(feature) {
-            
-            selected_metadata_subset <- input[[paste0("subset_group_", source)]]
-            selected_metadata_column <- input[[paste0("group_column_", source)]]
+            selected_metadata_subset <- reactive({
+              input[[paste0("subset_group_", source)]]
+            })
+            selected_metadata_column <- reactive({
+              input[[paste0("group_column_", source)]]
+            })
 
             # Create observer for the select button for this feature
             observeEvent(input[[paste0("select_", feature)]], {
@@ -258,10 +258,12 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
               # Bookmark functionality to be implemented
             })
 
-            # generate plot id for the feature
             plot_id <- reactive({
-              req(selected_row_source$selected, selected_row_source$source)
-              paste0("source_", source, ";selected_", feature, ";selected_metadata_subset", selected_metadata_subset, ";selected_metadata_column", selected_metadata_column)
+              paste0(
+                "source_", source, ";selected_", feature,
+                ";selected_metadata_subset", selected_metadata_subset(),
+                ";selected_metadata_column", selected_metadata_column()
+              )
             })
 
             # Generate the plot function for this feature
@@ -270,7 +272,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
               function(export_data = FALSE) {
                 plot_expression_movida(
                   feature,
-                  movida_data$get_values_subset_metadata(selected_metadata_subset, source, column = selected_metadata_column, return_se = TRUE),
+                  movida_data$get_values_subset_metadata(selected_metadata_subset(), source, column = selected_metadata_column(), return_se = TRUE),
                   export_data = export_data,
                   data_type = "source",
                   group_var = group_by()
