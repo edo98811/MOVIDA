@@ -113,13 +113,13 @@ check_se <- function(se_objects) {
   }
 
   # Check if rownames(rowData(se)) are valid for each se_ object
-  if (!is.null(se_objects$se_metabo) && !check_chebi(rownames(rowData(se_objects$se_metabo))) && !check_inchi(rownames(rowData(se_objects$se_metabo)))) {
+  if (!is.null(se_objects$se_metabo) && !suppressWarnings(check_chebi(rownames(rowData(se_objects$se_metabo)))) && !suppressWarnings(check_inchi(rownames(rowData(se_objects$se_metabo))))) {
     stop("Error: Invalid ChEBI or InChI IDs in rownames(rowData(se_metabo)).")
   }
-  if (!is.null(se_objects$se_prot) && !check_uniprot(rownames(rowData(se_objects$se_prot)))) {
+  if (!is.null(se_objects$se_prot) && !suppressWarnings(check_uniprot(rownames(rowData(se_objects$se_prot))))) {
     stop("Error: Invalid UniProt IDs in rownames(rowData(se_prot)).")
   }
-  if (!is.null(se_objects$se_trans) && !check_ensembl(rownames(rowData(se_objects$se_trans)))) {
+  if (!is.null(se_objects$se_trans) && !suppressWarnings(check_ensembl(rownames(rowData(se_objects$se_trans))))) {
     stop("Error: Invalid Ensembl IDs in rownames(rowData(se_trans)).")
   }
 

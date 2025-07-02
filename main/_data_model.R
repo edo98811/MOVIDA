@@ -374,10 +374,13 @@ MovidaModel <- R6Class("MovidaModel",
 
       return(thisset_members)
     },
-    get_values_group = function(groups, source) {
+    get_values_subset_metadata = function(subset, source, column = "group", return_se = FALSE) {
       # Check if 'groups' is a vector of strings
-      if (!is.character(groups) || !is.vector(groups)) {
-        stop("Argument 'groups' must be a vector of strings.")
+
+      if (is.null(subset)) return(self$get_values_all(source, return_se))
+
+      if (!is.character(subset) || !is.vector(subset)) {
+        stop("Argument 'subset' must be a vector of strings.")
       }
 
       # Select the appropriate SummarizedExperiment object based on the source
@@ -392,12 +395,12 @@ MovidaModel <- R6Class("MovidaModel",
       }
 
       # Check that all groups in 'groups' are present in colData(se_source)$group
-      if (!all(groups %in% colData(se_source)$group)) {
-        stop("Some groups in 'groups' are not present in colData(se_source)$group.")
+      if (!all(subset %in% colData(se_source)[[column]])) {
+        stop("Some subset in 'subset' are not present in colData(se_source)$group.")
       }
 
       # Subset se_source based on the specified groups
-      subset_indices <- colData(se_source)$group %in% groups
+      subset_indices <- colData(se_source)[[column]] %in% subset
       return(se_source[, subset_indices])
     },
     get_values_samples = function(samples, source) {
@@ -444,6 +447,17 @@ MovidaModel <- R6Class("MovidaModel",
         return(colnames(private$se_trans))
       } else if (source == "metabolomics") {
         return(colnames(private$se_metabo))
+      } else {
+        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      }
+    },
+    get_metadata = function(source) {
+      if (source == "proteomics") {
+        return(colData(private$se_prot))
+      } else if (source == "transcriptomics") {
+        return(colData(private$se_trans))
+      } else if (source == "metabolomics") {
+        return(colData(private$se_metabo))
       } else {
         stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }

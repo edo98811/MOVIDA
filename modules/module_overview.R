@@ -6,36 +6,7 @@ source("modules/module_table_container.R")
 # UI function for the module
 mod_overview_ui <- function(id) {
   ns <- NS(id) # Namespace for the module
-  #' Module Overview Interface
-  #'
-  #' This module provides a comprehensive overview interface organized into multiple tabs
-  #' for data exploration and analysis. The module is designed with independent table
-  #' components that can display results conditionally.
-  #'
-  #' @section Structure:
-  #' The module consists of three main pages/tabs:
-  #' - Each tab contains three wide div containers (organized in columns of 3)
-  #' - Each div includes:
-  #'   - A search box for item selection
-  #'   - A list of available IDs
-  #'   - A filtering button with reactive list functionality
-  #'
-  #' @section Features:
-  #' - **Independent Tables**: All tables operate independently with conditional display
-  #' - **Selective Display**: Tables only show available results; empty results are hidden
-  #' - **Contrast Selection**: Available only for DE (Differential Expression) and
-  #'   enrichment analysis modules
-  #' - **Multi-plot Support**: Capability to display multiple plot modules simultaneously
-  #' - **Reactive Filtering**: Dynamic list updates based on user filtering actions
-  #'
-  #' @section Pages:
-  #' - Page 1: Search and selection interface
-  #' - Page 2: Results display with 1-3 tables depending on available data
-  #' - Page 3: Additional analysis views
-  #'
-  #' @note This module emphasizes conditional rendering - components only appear
-  #'       when relevant data is available, maintaining a clean user interface.
-  # Sources for the module
+
   sources <- c(
     transcriptomics = "Transcriptomics",
     proteomics = "Proteomics",

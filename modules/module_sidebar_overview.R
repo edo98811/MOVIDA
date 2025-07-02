@@ -30,6 +30,7 @@ mod_sidebar_overview_ui <- function(id) {
     )
   )
 }
+
 mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_source, movida_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -52,33 +53,28 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
             req(selected_row_source$selected)
             pathway <- selected_row_source$selected
 
-            # return UI el  ements for filtering
-            div(
-              class = "filter-controls mb-3",
-              # selectInput(
-              #   ns(paste0("group_column_", source)),
-              #   "Group by:",
-              #   choices = movida_data$get_metadata_columns(source),
-              #   selected = "condition"
-              # ),
-              # checkboxInput(
-              #   ns(paste0("selected_contrasts_only_", source)),
-              #   "Show only selected contrasts",
-              #   value = FALSE
-              # ),
-              # div(
-              #   class = "btn-group", role = "group",
-              #   tags$button(id = ns(paste0("bookmark_all", pathway)), type = "button", class = "btn btn-primary", "Bookmark")
-              # ),
-              mod_plot_ui(
-                id = ns(paste0(source, "_heatmap_", gsub(":", "", pathway))),
-                title = titles[[source]],
-                show_export_data_btn = TRUE,
-                show_export_plot_btn = TRUE
-              )
+            # return UI elements for filtering
+            # div(
+            #   class = "filter-controls mb-3",
+            #   selectInput(
+            #     ns(paste0("group_column_", source)),
+            #     "Group by:",
+            #     choices = NULL,
+            #     selected = "condition"
+            #   ),
+            #   uiOutput(ns(paste0("selected_contrasts_only_", source))),
+            #   class = "btn-group", role = "group",
+            #   tags$button(id = ns(paste0("bookmark_all", pathway)), type = "button", class = "btn btn-primary", "Bookmark")
+            # ),
+            mod_plot_ui(
+              id = ns(paste0(source, "_heatmap_", gsub(":", "", pathway))),
+              title = titles[[source]],
+              show_export_data_btn = TRUE,
+              show_export_plot_btn = TRUE
             )
           })
         })
+
         # SERVER LOGIC -------
         lapply(sources, function(source) {
           req(selected_row_source)
@@ -86,16 +82,6 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
           pathway <- selected_row_source$selected
           # source <- selected_row_source$source
           contrast <- selected_row_source$contrast
-
-          # observe event for select filtering column
-          observeEvent(input[[ns(paste0("group_column_", source))]], {
-
-          })
-
-          # observe event for select contrast
-          observeEvent(input[[ns(paste0("selected_contrasts_only_", source))]], {
-
-          })
 
           # Plot id for the heatmap
           plot_id <- reactive({
@@ -168,38 +154,42 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
             related_features <- movida_data$get_related_features(selected_row_source$selected, source)
 
             # return UI elements for filtering
-            div(
-              class = "filter-controls mb-3",
-              selectInput(
-                ns(paste0("group_column_", source)),
-                "Group by:",
-                choices = movida_data$get_metadata_columns(source),
-                selected = "condition"
-              ),
-              checkboxInput(
-                ns(paste0("selected_contrasts_only_", source)),
-                "Show only selected contrasts",
-                value = FALSE
-              )
-            )
-
-            # Generate a plot for each related feature
-            lapply(related_features, function(feature) {
+            list(
               div(
-                hr(),
-                mod_plot_ui(
-                  id = ns(paste0(source, "_plot_", feature)),
-                  title = titles[[source]],
-                  show_export_data_btn = TRUE,
-                  show_export_plot_btn = TRUE
+                class = "filter-controls mb-3",
+                selectInput(
+                  ns(paste0("group_column_", source)),
+                  "Group by:",
+                  choices = c("group"),
+                  selected = "group"
                 ),
-                div(
-                  class = "btn-group w-100 py-2", role = "group",
-                  tags$button(id = ns(paste0("select_", feature)), type = "button", class = "btn btn-outline-secondary btn-sm", "Select"),
-                  tags$button(id = ns(paste0("bookmark_", feature)), type = "button", class = "btn btn-outline-secondary btn-sm", "Bookmark")
+                # Source selector
+                selectInput(
+                  ns(paste0("subset_group_", source)),
+                  "Select Subset",
+                  choices = NULL,
+                  selected = NULL,
+                  multiple = TRUE
                 )
-              )
-            })
+              ),
+              # Generate a plot for each related feature
+              lapply(related_features, function(feature) {
+                div(
+                  hr(),
+                  mod_plot_ui(
+                    id = ns(paste0(source, "_plot_", feature)),
+                    title = titles[[source]],
+                    show_export_data_btn = TRUE,
+                    show_export_plot_btn = TRUE
+                  ),
+                  div(
+                    class = "btn-group w-100 py-2", role = "group",
+                    tags$button(id = ns(paste0("select_", feature)), type = "button", class = "btn btn-outline-secondary btn-sm", "Select"),
+                    tags$button(id = ns(paste0("bookmark_", feature)), type = "button", class = "btn btn-outline-secondary btn-sm", "Bookmark")
+                  )
+                )
+              })
+            )
           })
         })
 
@@ -219,19 +209,44 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
           req(selected_row_source$selected)
           related_features <- movida_data$get_related_features(selected_row_source$selected, source)
 
-          # observe event for select filtering column
-          observeEvent(input[[ns(paste0("group_column_", source))]], {
-
+          # observe event for select filtering column (does this need to be rectie?)
+          group_by <- reactive({
+            input[[paste0("group_column_", source)]]
           })
 
-          # observe event for select contrast
-          observeEvent(input[[ns(paste0("selected_contrasts_only_", source))]], {
+          observeEvent(input[[paste0("group_column_", source)]], {
+            input_id <- paste0("group_column_", source)
 
+            # Only update if the input has already been rendered
+            if (!is.null(input[[input_id]])) {
+              updateSelectInput(
+                session,
+                input_id,
+                choices = colnames(movida_data$get_metadata(source)),
+                selected = group_by()
+              )
+            }
+          })
+
+          observe({
+            selected_group_col <- input[[paste0("group_column_", source)]]
+            req(selected_group_col)
+
+            updateSelectInput(
+              session,
+              paste0("subset_group_", source),
+              choices = movida_data$get_metadata(source)[[selected_group_col]],
+              selected = "group"
+            )
           })
 
           # For each related feature, set up the select and bookmark button observers
           # Then create the plotting function, call the plot_module server
           lapply(related_features, function(feature) {
+            
+            selected_metadata_subset <- input[[paste0("subset_group_", source)]]
+            selected_metadata_column <- input[[paste0("group_column_", source)]]
+
             # Create observer for the select button for this feature
             observeEvent(input[[paste0("select_", feature)]], {
               selected_row_source$selected <- feature
@@ -246,26 +261,28 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
             # generate plot id for the feature
             plot_id <- reactive({
               req(selected_row_source$selected, selected_row_source$source)
-              paste0("source_", source, ";selected_", feature)
+              paste0("source_", source, ";selected_", feature, ";selected_metadata_subset", selected_metadata_subset, ";selected_metadata_column", selected_metadata_column)
             })
 
             # Generate the plot function for this feature
             # I don't need it reactive because it is created new each time
-            plot_function <- function(export_data = FALSE) {
-              plot_expression_movida(
-                feature,
-                movida_data$get_values_all(source, return_se = TRUE),
-                export_data = export_data,
-                data_type = "source",
-                group_var = "group"
-              )
-            }
+            plot_function <- reactive({
+              function(export_data = FALSE) {
+                plot_expression_movida(
+                  feature,
+                  movida_data$get_values_subset_metadata(selected_metadata_subset, source, column = selected_metadata_column, return_se = TRUE),
+                  export_data = export_data,
+                  data_type = "source",
+                  group_var = group_by()
+                )
+              }
+            })
 
             # Set up plot server logic for this feature
             mod_plot_server(
               id = paste0(source, "_plot_", feature),
               plot_id = plot_id(),
-              main_plotting_function = plot_function,
+              main_plotting_function = plot_function(),
               dashboard_elements = dashboard_elements
             )
           })
