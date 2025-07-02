@@ -1,12 +1,25 @@
 # MOVIDA
 
-requirement: the fea and DEA elements must be named group_vs_group. to be visualized at the same time, all th e layers must have the same name of the contrast.
+A package to interactively explore multi-omics data.
+
+## Installation
+
+```R
+install.packages("devtools")     
+devtools::install_github("edoardofilippi/MOVIDA")
+```
+## Usage
+
+```R
+library("MOVIDA")
+
+movida_list <- list(
+  dde_metabo = dde,
+  organsim = "Mm"
+)
+
+MovidaApp(movida_list)
+```
 
 
-next steps 
-- implement heatmaps for go 
-- make r package
-- make it work for chebi 
-- make a new query to create the relationship databases
-- general refactoring of the code to make it more readable and maintainable and take care of bugs
-- overview almost finished!!
+
