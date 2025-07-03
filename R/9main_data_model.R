@@ -279,7 +279,6 @@ MovidaModel <- R6Class("MovidaModel",
       }
     },
     get_related_features = function(feature, target) {
-
       if (!is.character(c(feature))) {
         stop("Argument 'features' must be a vector of strings.")
       }
@@ -327,15 +326,17 @@ MovidaModel <- R6Class("MovidaModel",
         stop("Argument 'features' must be a vector of strings.")
       }
 
-      # Determine the source type based on the input features
-      if (check_ensembl(features)) {
-        source <- "transcriptomics"
-      } else if (check_inchi(features)) {
-        source <- "metabolomics"
-      } else if (check_uniprot(features)) {
-        source <- "proteomics"
-      } else {
-        stop("Error: features must be of type Ensembl, inchi, or UniProt.")
+      if (!is.null(source)) {
+        # Determine the source type based on the input features
+        if (check_ensembl(features)) {
+          source <- "transcriptomics"
+        } else if (check_inchi(features)) {
+          source <- "metabolomics"
+        } else if (check_uniprot(features)) {
+          source <- "proteomics"
+        } else {
+          stop("Error: features must be of type Ensembl, inchi, or UniProt.")
+        }
       }
 
       # Select the appropriate SummarizedExperiment object based on the source
@@ -388,7 +389,9 @@ MovidaModel <- R6Class("MovidaModel",
     get_values_subset_metadata = function(subset, source, column = "group", return_se = FALSE) {
       # Check if 'groups' is a vector of strings
 
-      if (is.null(subset)) return(self$get_values_all(source, return_se))
+      if (is.null(subset)) {
+        return(self$get_values_all(source, return_se))
+      }
 
       if (!is.character(subset) || !is.vector(subset)) {
         browser()

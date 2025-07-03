@@ -22,28 +22,7 @@ ui <- page_fillable(
     ),
     nav_panel(
       title = "Plot Factory",
-      navset_pill(
-        nav_panel(
-          title = "PCA",
-          uiOutput("1")
-        ),
-        nav_panel(
-          title = "Enrichment map",
-          uiOutput("2")
-        ),
-        nav_panel(
-          title = "Expression or abundance",
-          uiOutput("2")
-        ),
-        nav_panel(
-          title = "Heatmap",
-          uiOutput("2")
-        ),
-        nav_panel(
-          title = "From selected data",
-          uiOutput("3")
-        )
-      )
+      mod_plotting_ui("plotting")
     ),
     nav_panel(
       title = "Biological processes",

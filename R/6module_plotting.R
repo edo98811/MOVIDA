@@ -1,68 +1,201 @@
-
 # DRAFT -------
-
-
-
 
 # UI function for the module
 mod_plotting_ui <- function(id) {
   ns <- NS(id) # Namespace for the module
 
   sources <- c(
-    transcriptomics = "Transcriptomics",
-    proteomics = "Proteomics",
-    metabolomics = "Metabolomics"
+    "transcriptomics",
+    "proteomics",
+    "metabolomics"
   )
 
-  # Source selector
-  selectInput(
-    ns("source_selector"),
-    "Select Data Source",
-    choices = sources,
-    selected = "transcriptomics"
-  )
-  selectInput(
-    ns("features_search_box"),
-    "Select Features to Plot",
-    choices = NULL,
-    multiple = TRUE
+  page_fillable(
+    accordion(
+      accordion_panel("Line Plot", uiOutput(ns("line_plot"))),
+      accordion_panel("Heatmap", uiOutput(ns("heatma_plot"))),
+      accordion_panel("PCA", uiOutput(ns("pca_plot"))),
+      id = ns("plotting_accordion"), open = TRUE, fillable = TRUE, title = "Available plots"
+    )
   )
 }
-
-mod_plotting_server <- function(id, dashboard_elements, row_to_select, movida_data) {
+mod_plotting_server <- function(id, dashboard_elements, bookmarked_elements, movida_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    sources <- c("transcriptomics", "proteomics", "metabolomics")
-    
-    # Update choices for the single features search box
-    updateSelectInput(
-      session,
-      "features_search_box",
-      choices = movida_data$get_all_features(input$source_selector)
+
+    sources <- c(
+      "transcriptomics",
+      "proteomics",
+      "metabolomics"
     )
+    #### UI FOR LINE PLOT ####
+    output$line_plot <- renderUI({
+      layout_column_wrap(
+        width = 1 / 2,
+        style = "margin-top: 20px; margin-bottom: 20px;",
+        div(
 
+          ## selector
+          # - median / mean
+          # - source
+          # - features_to_plot
+          # - group_by
+          # - groups to show
 
-    # Save selected features
+          # Median/Mean selector buttons
+          div(
+            style = "margin-bottom: 10px;",
+            actionButton(
+              ns("median_btn"),
+              "Median",
+              class = "btn-default"
+            ),
+            actionButton(
+              ns("mean_btn"),
+              "Mean",
+              class = "btn-primary"
+            )
+          ),
 
-
-
-    plot_function <- function(export_data = FALSE) {
-      se <- movida_data$get_values_all(source <- input$source_selector, return_se = TRUE)
-      features <- input$features_search_box
-
-      plot_expression_movida_line(
-        se,
-        features,
-        export_data = export_data
+          # Source selector
+          selectInput(
+            ns("source_selector"),
+            "Select Data Source",
+            choices = sources,
+            selected = "transcriptomics"
+          ),
+          # Group column selector
+          uiOutput(ns("group_column_ui")),
+          uiOutput(ns("subset_group_ui")),
+          uiOutput(ns("features_search_box_ui"))
+        ),
+        div(
+          uiOutput(ns("dynamic_line_plot"))
+        )
       )
-    }
+    })
 
-    # Set up plot server logic for this feature
-    mod_plot_server(
-      id = paste0(source, "_gene_line_", gsub(":", "", pathway)),
-      plot_id = plot_id(),
-      main_plotting_function = plot_function,
-      dashboard_elements = dashboard_elements
-    )
+    ##### SERVER LOGIC FOR LINE PLOT #####
+
+    # Reactive value to store mean/median selection
+    mean_median <- reactiveVal("median")
+
+    observeEvent(input$median_btn, {
+      mean_median("median")
+      updateActionButton(
+        session,
+        "median_btn",
+        class = "btn-primary"
+      )
+      updateActionButton(
+        session,
+        "mean_btn",
+        class = "btn-default"
+      )
+    })
+
+    observeEvent(input$mean_btn, {
+      mean_median("mean")
+      updateActionButton(
+        session,
+        "mean_btn",
+        class = "btn-primary"
+      )
+      updateActionButton(
+        session,
+        "median_btn",
+        class = "btn-default"
+      )
+    })
+
+    output$group_column_ui <- renderUI({
+      req(input$source_selector)
+      selectInput(
+        ns("group_column"),
+        "Group by:",
+        choices = colnames(movida_data$get_metadata(input$source_selector)),
+        selected = "group"
+      )
+    })
+
+    output$subset_group_ui <- renderUI({
+      req(input$source_selector, input$group_column)
+      selectInput(
+        ns("subset_group"),
+        "Select Subset",
+        choices = unique(movida_data$get_metadata(input$source_selector)[[input$group_column]]),
+        selected = NULL,
+        multiple = TRUE
+      )
+    })
+
+    output$features_search_box_ui <- renderUI({
+      selectInput(
+        ns("features_search_box"),
+        "Select Features to Plot",
+        choices = movida_data$get_features_list(input$source_selector),
+        multiple = TRUE,
+        selected = NULL
+      )
+    })
+
+    plot_function <- reactive({
+      req(
+        input$features_search_box,
+        input$subset_group,
+        input$source_selector,
+        input$group_column,
+        mean_median()
+      )
+
+      return(function(export_data = FALSE) {
+        features <- input$features_search_box
+
+        se <- movida_data$get_values_subset_metadata(
+          input$subset_group,
+          input$source_selector,
+          column = input$group_column,
+          return_se = TRUE
+        )
+
+        plot_expression_line_movida(
+          features,
+          se,
+          group_var = input$group_column,
+          export_data = export_data,
+          mean_median = mean_median()
+        )
+      })
+    })
+
+    plot_id <- reactive({
+      paste0(
+        "source_", input$source_selector,
+        ";selected_", input$group_column,
+        ";selected_metadata_subset",  paste(input$subset_group, collapse = "_"),
+        ";selected_metadata_column", input$group_column,
+        ";mean_median_", mean_median(),
+        ";features_", paste(input$features_search_box, collapse = "_")
+      )
+    })
+
+    output$dynamic_line_plot <- renderUI({
+      mod_plot_ui(
+        id = ns("dynamic_line_plot"),
+        title = "Line Plot",
+        show_export_data_btn = TRUE,
+        show_export_plot_btn = TRUE
+      )
+    })
+
+    observe({
+      req(plot_id(), plot_function())
+      mod_plot_server(
+        id = "dynamic_line_plot",
+        plot_id = plot_id(),
+        main_plotting_function = plot_function(),
+        dashboard_elements = dashboard_elements
+      )
+    })
   })
 }

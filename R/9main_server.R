@@ -59,4 +59,6 @@ server <- function(input, output, session, movida_data) {
       }
     })
   })
+
+  mod_plotting_server("plotting", dashboard_elements, bookmarked_features, movida_data)
 }

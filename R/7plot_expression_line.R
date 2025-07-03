@@ -16,7 +16,18 @@
 #' @import ggplot2
 #' @importFrom SummarizedExperiment assays colData
 #' @export
-plot_expression_line_movida <- function(entities, se_object, group_var = "group", export_data = FALSE, data_type = "unknown") {
+plot_expression_line_movida <- function(entities, se_object, group_var = "group", export_data = FALSE, data_type = "unknown", mean_median = "mean") {
+
+  if (is.null(entities) || length(entities) == 0) {
+    return(ggplot() +
+      annotate("text",
+        x = 0.5, y = 0.5,
+        label = "Select at least one feature to plot",
+        size = 6, hjust = 0.5, vjust = 0.5
+      ) +
+      theme_void())
+  }
+
   # Use count matrix from SummarizedExperiment
   count_matrix <- assays(se_object)$counts
 
@@ -32,11 +43,10 @@ plot_expression_line_movida <- function(entities, se_object, group_var = "group"
     return(ggplot() +
       annotate("text",
         x = 0.5, y = 0.5,
-        label = "No entities found in data",
+        label = "No features found in data",
         size = 6, hjust = 0.5, vjust = 0.5
       ) +
-      theme_void()
-    )
+      theme_void())
   }
 
   # Extract expression data for existing entities
@@ -56,7 +66,13 @@ plot_expression_line_movida <- function(entities, se_object, group_var = "group"
   for (entity in existing_entities) {
     for (group in unique(group_info)) {
       group_samples <- which(group_info == group)
-      avg_val <- mean(expr_data[entity, group_samples])
+
+      avg_val <- switch(mean_median,
+        "mean" = mean(expr_data[entity, group_samples]),
+        "median" = median(expr_data[entity, group_samples])
+      )
+
+      mean(expr_data[entity, group_samples])
       avg_expr <- rbind(avg_expr, data.frame(
         Entity = entity,
         Group = group,
@@ -67,9 +83,9 @@ plot_expression_line_movida <- function(entities, se_object, group_var = "group"
 
   # Export the plotting data if requested
   if (export_data) {
-    return(plotting_data)
+    return(avg_expr)
   }
-
+  
   # Create line plot
   ggplot(avg_expr, aes(x = Group, y = Average_Expression, color = Entity, group = Entity)) +
     geom_line(size = 1.2) +
@@ -77,12 +93,12 @@ plot_expression_line_movida <- function(entities, se_object, group_var = "group"
     theme_bw() +
     theme(
       plot.title = element_text(size = 16),
-      axis.text.x = element_text(angle = 45, hjust = 1)
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      axis.title.y = element_blank()
     ) +
     labs(
       title = "Average by Group",
       x = "Group",
-      y = "Average Expression",
-      color = "Gene"
+      color = "Entity"
     )
 }
