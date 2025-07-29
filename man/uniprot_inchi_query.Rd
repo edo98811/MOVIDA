@@ -9,34 +9,34 @@ uniprot_inchi_query(inchikey, get_ensembl = FALSE, get_uniprot = TRUE)
 \arguments{
 \item{inchikey}{A character string representing a valid InChIKey.}
 
-\item{get_ensembl}{Logical. If `TRUE`, the function retrieves Ensembl gene IDs. Default is `FALSE`.}
+\item{get_ensembl}{Logical. If \code{TRUE}, the function retrieves Ensembl gene IDs. Default is \code{FALSE}.}
 
-\item{get_uniprot}{Logical. If `TRUE`, the function retrieves UniProt protein IDs. Default is `TRUE`.}
+\item{get_uniprot}{Logical. If \code{TRUE}, the function retrieves UniProt protein IDs. Default is \code{TRUE}.}
 }
 \value{
 A list containing:
 \itemize{
-  \item \code{protein_ids}: A character vector of UniProt protein IDs, or \code{NULL} if \code{get_uniprot} is \code{FALSE}.
-  \item \code{gene_ids}: A character vector of Ensembl gene IDs, or \code{NULL} if \code{get_ensembl} is \code{FALSE}.
+\item \code{protein_ids}: A character vector of UniProt protein IDs, or \code{NULL} if \code{get_uniprot} is \code{FALSE}.
+\item \code{gene_ids}: A character vector of Ensembl gene IDs, or \code{NULL} if \code{get_ensembl} is \code{FALSE}.
 }
 If no matches are found, a warning is issued and both elements of the list are \code{NULL}.
 }
 \description{
-This function queries the UniProt REST API to retrieve UniProt protein IDs 
-and/or Ensembl gene IDs associated with a given InChIKey. The function 
-validates the provided InChIKey, constructs the appropriate API request, 
+This function queries the UniProt REST API to retrieve UniProt protein IDs
+and/or Ensembl gene IDs associated with a given InChIKey. The function
+validates the provided InChIKey, constructs the appropriate API request,
 and parses the response to extract the desired information.
 }
 \details{
-The function constructs a query to the UniProt REST API using the provided 
-InChIKey and optional parameters to specify whether to retrieve UniProt 
-protein IDs and/or Ensembl gene IDs. The API response is parsed to extract 
-the requested information. If the API returns an error or no matches are 
+The function constructs a query to the UniProt REST API using the provided
+InChIKey and optional parameters to specify whether to retrieve UniProt
+protein IDs and/or Ensembl gene IDs. The API response is parsed to extract
+the requested information. If the API returns an error or no matches are
 found, appropriate error handling is performed.
 }
 \note{
-The function assumes that the `check_inchi` function is available in the 
-environment to validate the InChIKey. The UniProt REST API must be accessible 
+The function assumes that the \code{check_inchi} function is available in the
+environment to validate the InChIKey. The UniProt REST API must be accessible
 for the function to work.
 }
 \examples{

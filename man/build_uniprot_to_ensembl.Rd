@@ -15,7 +15,7 @@ build_uniprot_to_ensembl(rowdata_prot, rowdata_trans, organism)
 }
 \value{
 A data frame containing the mapping of UniProt IDs to Ensembl IDs, filtered to include
-        only those Ensembl IDs present in `rowdata_trans`.
+only those Ensembl IDs present in \code{rowdata_trans}.
 }
 \description{
 This function maps UniProt identifiers to Ensembl identifiers for a given organism.
@@ -23,12 +23,12 @@ It uses the appropriate annotation database based on the specified organism and 
 the results to include only those Ensembl IDs present in the provided transcript data.
 }
 \details{
-The function uses the `AnnotationDbi::select` function to perform the mapping. It checks for
+The function uses the \code{AnnotationDbi::select} function to perform the mapping. It checks for
 missing values in the mapping and issues a warning if some entries could not be mapped. If
 all entries are missing, the function stops with an error.
 }
 \note{
-Ensure that the `org.Hs.eg.db` or `org.Mm.eg.db` package is installed and loaded, depending
+Ensure that the \code{org.Hs.eg.db} or \code{org.Mm.eg.db} package is installed and loaded, depending
 on the organism specified.
 }
 \examples{

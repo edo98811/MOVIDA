@@ -9,7 +9,8 @@ plot_expression_line_movida(
   se_object,
   group_var = "group",
   export_data = FALSE,
-  data_type = "unknown"
+  data_type = "unknown",
+  mean_median = "mean"
 )
 }
 \arguments{

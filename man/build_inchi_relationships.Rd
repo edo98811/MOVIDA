@@ -27,12 +27,12 @@ in the output. Default is TRUE.}
 }
 \value{
 A data frame containing the following columns:
-        - `UNIPROT`: UniProt protein IDs (if `get_uniprot` is TRUE).
-        - `ENSEMBL`: Ensembl gene IDs (if `get_ensembl` is TRUE).
-        - `inchikey`: inchi IDs from the metabolomics data.
-        The UniProt and Ensembl IDs are filtered to include only those present in
-        `rowdata_target`. inchi IDs are repeated to match the lengths of the corresponding
-        UniProt/Ensembl data.
+- \code{UNIPROT}: UniProt protein IDs (if \code{get_uniprot} is TRUE).
+- \code{ENSEMBL}: Ensembl gene IDs (if \code{get_ensembl} is TRUE).
+- \code{inchikey}: inchi IDs from the metabolomics data.
+The UniProt and Ensembl IDs are filtered to include only those present in
+\code{rowdata_target}. inchi IDs are repeated to match the lengths of the corresponding
+UniProt/Ensembl data.
 }
 \description{
 This function generates a data frame of relationships between inchi IDs, UniProt IDs,
@@ -42,13 +42,15 @@ results based on their presence in the target data.
 }
 \details{
 The function performs the following steps:
-1. Extracts inchi IDs from the metabolomics data (`rowdata_metabo`).
-2. Filters out NA values from the inchi IDs.
-3. Queries UniProt for each inchi ID to retrieve associated protein and gene information.
-4. Filters the retrieved UniProt and Ensembl IDs to include only those present in
-   the row names of `rowdata_target`.
-5. Constructs a data frame containing the relationships between inchi IDs, UniProt IDs,
-   and Ensembl IDs.
+\enumerate{
+\item Extracts inchi IDs from the metabolomics data (\code{rowdata_metabo}).
+\item Filters out NA values from the inchi IDs.
+\item Queries UniProt for each inchi ID to retrieve associated protein and gene information.
+\item Filters the retrieved UniProt and Ensembl IDs to include only those present in
+the row names of \code{rowdata_target}.
+\item Constructs a data frame containing the relationships between inchi IDs, UniProt IDs,
+and Ensembl IDs.
+}
 }
 \examples{
 # Example usage:
