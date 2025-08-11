@@ -167,6 +167,14 @@ movida_list <- list(
   metadata = NULL
 )
 
+movida_list_se <- list(
+  dde_prot = se_prot,
+  dde_metabo = se_metabo,
+  dde_trans = se_trans,
+  organism = "Mm",
+  metadata = NULL
+)
+
 # movida_list_shared <- list(
 #   dde_prot = dde_prot,
 #   dde_metabo = dde_metabo,
@@ -176,5 +184,6 @@ movida_list <- list(
 # )
 
 model <-  MovidaModel$new(movida_list)
+model_se <-  MovidaModel$new(movida_list_se)
 # model_shared <-  MovidaModel$new(movida_list_shared)
 message("Setup-tests.R was sourced")
