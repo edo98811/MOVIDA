@@ -131,7 +131,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
         # 1. For each omics source (transcriptomics, proteomics, metabolomics):
         #    - Add buttons to filter by contrast (maybe another select contrast specific to the navbar overview) and to select grouping columns
         # 2. When a feature is selected:
-        #    - Retrieve related features using get_relatedfeatures()
+        #    - Retrieve related features using get_related_features()
         #    - Generate a plot for each related feature
         #    - Add selection and bookmark buttons for each plot
         # 3. Update UI reactively when selection changes
@@ -146,7 +146,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
         lapply(sources, function(source) {
           output[[paste0("sidebar_ui_plots_", source)]] <- renderUI({
             req(selected_row_source$selected)
-            relatedfeatures <- movida_data$get_relatedfeatures(selected_row_source$selected, source)
+            relatedfeatures <- movida_data$get_related_features(selected_row_source$selected, source)
 
             # return UI elements for filtering
             list(
@@ -203,7 +203,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
 
         lapply(sources, function(source) {
           req(selected_row_source$selected)
-          relatedfeatures <- movida_data$get_relatedfeatures(selected_row_source$selected, source)
+          relatedfeatures <- movida_data$get_related_features(selected_row_source$selected, source)
 
           # observe event for select filtering column (does this need to be rectie?)
           group_by <- reactive({

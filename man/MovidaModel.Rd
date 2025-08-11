@@ -60,7 +60,7 @@ for the selected data target.
 \item \code{get_valuesfeatures(features, source = NULL)}: Retrieves expression data for specific features.
 \item \code{get_values_group(groups, source)}: Returns data for specified experimental groups.
 \item \code{get_values_samples(samples, source)}: Returns data for specific sample IDs.
-\item \code{get_relatedfeatures(feature, target)}: Maps a feature identifier (e.g., InChI, UniProt, Ensembl)
+\item \code{get_related_features(feature, target)}: Maps a feature identifier (e.g., InChI, UniProt, Ensembl)
 to its related identifiers in other omics layers.
 \item \code{get_inchi_to_ensembl()}, \code{get_inchi_to_uniprot()}, \code{get_uniprot_to_ensembl()}: Accessors for relationship mappings
 generated during the \code{build_relationships()} phase.
@@ -100,7 +100,7 @@ relationships <- load_relationships("path/to/relationships_folder")
 \item \href{#method-MovidaModel-getDEA}{\code{MovidaModel$getDEA()}}
 \item \href{#method-MovidaModel-getFEA}{\code{MovidaModel$getFEA()}}
 \item \href{#method-MovidaModel-get_values_all}{\code{MovidaModel$get_values_all()}}
-\item \href{#method-MovidaModel-get_relatedfeatures}{\code{MovidaModel$get_relatedfeatures()}}
+\item \href{#method-MovidaModel-get_related_features}{\code{MovidaModel$get_related_features()}}
 \item \href{#method-MovidaModel-get_valuesfeatures}{\code{MovidaModel$get_valuesfeatures()}}
 \item \href{#method-MovidaModel-get_pathwayfeatures}{\code{MovidaModel$get_pathwayfeatures()}}
 \item \href{#method-MovidaModel-get_values_subset_metadata}{\code{MovidaModel$get_values_subset_metadata()}}
@@ -313,12 +313,12 @@ Returns assay data or SummarizedExperiment object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MovidaModel-get_relatedfeatures"></a>}}
-\if{latex}{\out{\hypertarget{method-MovidaModel-get_relatedfeatures}{}}}
-\subsection{Method \code{get_relatedfeatures()}}{
+\if{html}{\out{<a id="method-MovidaModel-get_related_features"></a>}}
+\if{latex}{\out{\hypertarget{method-MovidaModel-get_related_features}{}}}
+\subsection{Method \code{get_related_features()}}{
 Get related features across omics types.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_relatedfeatures(feature, target)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_related_features(feature, target)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

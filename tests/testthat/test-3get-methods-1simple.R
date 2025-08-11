@@ -40,3 +40,16 @@ test_that("get_dde_object", {
   } 
   expect_error(model$get_dde_object_exposed("nonexistent_source"), "get_dde_object: Invalid source type.")
 })
+
+test_that("get_sources", {
+  sources <- model$get_sources()
+  expect_true(is.character(sources))
+  expect_equal(
+    sources,
+    c(
+      transcriptomics = "Transcriptomics",
+      proteomics = "Proteomics",
+      metabolomics = "Metabolomics"
+    )
+  )
+})

@@ -147,7 +147,7 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
             {
               if (is_filtering()) {
                 req(row_to_select$selected)
-                data <- movida_data$get_relatedfeatures(row_to_select$selected, source)
+                data <- movida_data$get_related_features(row_to_select$selected, source)
               } else {
                 data <- movida_data$get_features_all(source)
               }
