@@ -28,3 +28,15 @@ test_that("get_metadata", {
   expect_true("group" %in% colnames(meta))
   expect_equal(sort(unique(meta$group)), c("A", "B"))
 })
+
+test_that("get_dde_object", {
+
+  to_test <- c("proteomics", "transcriptomics", "metabolomics")
+  for (source in to_test) {
+    dde <- model$get_dde_object_exposed(source)
+    expect_s4_class(dde, "DeeDeeExperiment")
+    expect_true(all(rownames(dde) %in% model$getfeatures_all(source)))
+    expect_true(all(colnames(dde) %in% model$get_metadata(source)$sample_id))
+  } 
+  expect_error(model$get_dde_object_exposed("nonexistent_source"), "get_dde_object: Invalid source type.")
+})

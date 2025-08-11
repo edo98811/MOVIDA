@@ -51,16 +51,16 @@ and Ensembl identifiers, with support for parallel processing.
 \item \code{load_relationships(folder_path)}: Loads previously saved relationship data from disk.
 \item \code{save_relationships(folder_path)}: Saves current feature relationship data to disk for reuse.
 \item \code{get_contrasts()}: Returns a list of available contrasts (comparisons) in the analysis.
-\item \code{get_dea(target, contrast, FDRpvalue = NULL, FDRadj = NULL)}: Retrieves differential expression results
+\item \code{getDEA(target, contrast, FDRpvalue = NULL, FDRadj = NULL)}: Retrieves differential expression results
 for the given data target and contrast, with optional FDR-based filtering.
-\item \code{get_fea(target, contrast, FDRpvalue = NULL, FDRadj = NULL)}: Retrieves functional enrichment analysis results
+\item \code{getFEA(target, contrast, FDRpvalue = NULL, FDRadj = NULL)}: Retrieves functional enrichment analysis results
 for the specified target and contrast, with optional filtering.
 \item \code{get_values_all(target, return_se = FALSE)}: Returns all assay data (or \code{SummarizedExperiment} object)
 for the selected data target.
-\item \code{get_values_features(features, source = NULL)}: Retrieves expression data for specific features.
+\item \code{get_valuesfeatures(features, source = NULL)}: Retrieves expression data for specific features.
 \item \code{get_values_group(groups, source)}: Returns data for specified experimental groups.
 \item \code{get_values_samples(samples, source)}: Returns data for specific sample IDs.
-\item \code{get_related_features(feature, target)}: Maps a feature identifier (e.g., InChI, UniProt, Ensembl)
+\item \code{get_relatedfeatures(feature, target)}: Maps a feature identifier (e.g., InChI, UniProt, Ensembl)
 to its related identifiers in other omics layers.
 \item \code{get_inchi_to_ensembl()}, \code{get_inchi_to_uniprot()}, \code{get_uniprot_to_ensembl()}: Accessors for relationship mappings
 generated during the \code{build_relationships()} phase.
@@ -97,15 +97,15 @@ relationships <- load_relationships("path/to/relationships_folder")
 \item \href{#method-MovidaModel-get_inchi_to_ensembl}{\code{MovidaModel$get_inchi_to_ensembl()}}
 \item \href{#method-MovidaModel-get_inchi_to_uniprot}{\code{MovidaModel$get_inchi_to_uniprot()}}
 \item \href{#method-MovidaModel-get_uniprot_to_ensembl}{\code{MovidaModel$get_uniprot_to_ensembl()}}
-\item \href{#method-MovidaModel-get_dea}{\code{MovidaModel$get_dea()}}
-\item \href{#method-MovidaModel-get_fea}{\code{MovidaModel$get_fea()}}
+\item \href{#method-MovidaModel-getDEA}{\code{MovidaModel$getDEA()}}
+\item \href{#method-MovidaModel-getFEA}{\code{MovidaModel$getFEA()}}
 \item \href{#method-MovidaModel-get_values_all}{\code{MovidaModel$get_values_all()}}
-\item \href{#method-MovidaModel-get_related_features}{\code{MovidaModel$get_related_features()}}
-\item \href{#method-MovidaModel-get_values_features}{\code{MovidaModel$get_values_features()}}
-\item \href{#method-MovidaModel-get_pathway_features}{\code{MovidaModel$get_pathway_features()}}
+\item \href{#method-MovidaModel-get_relatedfeatures}{\code{MovidaModel$get_relatedfeatures()}}
+\item \href{#method-MovidaModel-get_valuesfeatures}{\code{MovidaModel$get_valuesfeatures()}}
+\item \href{#method-MovidaModel-get_pathwayfeatures}{\code{MovidaModel$get_pathwayfeatures()}}
 \item \href{#method-MovidaModel-get_values_subset_metadata}{\code{MovidaModel$get_values_subset_metadata()}}
 \item \href{#method-MovidaModel-get_values_samples}{\code{MovidaModel$get_values_samples()}}
-\item \href{#method-MovidaModel-get_features_list}{\code{MovidaModel$get_features_list()}}
+\item \href{#method-MovidaModel-getfeatures_all}{\code{MovidaModel$getfeatures_all()}}
 \item \href{#method-MovidaModel-get_metadata_columns}{\code{MovidaModel$get_metadata_columns()}}
 \item \href{#method-MovidaModel-get_metadata}{\code{MovidaModel$get_metadata()}}
 \item \href{#method-MovidaModel-clone}{\code{MovidaModel$clone()}}
@@ -239,12 +239,12 @@ Returns a data frame with UniProt to Ensembl relationships.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MovidaModel-get_dea"></a>}}
-\if{latex}{\out{\hypertarget{method-MovidaModel-get_dea}{}}}
-\subsection{Method \code{get_dea()}}{
+\if{html}{\out{<a id="method-MovidaModel-getDEA"></a>}}
+\if{latex}{\out{\hypertarget{method-MovidaModel-getDEA}{}}}
+\subsection{Method \code{getDEA()}}{
 Get differential expression analysis results.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_dea(source, contrast, FDRpvalue = NULL, FDRadj = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$getDEA(source, contrast, FDRpvalue = NULL, FDRadj = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -265,12 +265,12 @@ Returns a data frame of DEA results filtered by FDR thresholds.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MovidaModel-get_fea"></a>}}
-\if{latex}{\out{\hypertarget{method-MovidaModel-get_fea}{}}}
-\subsection{Method \code{get_fea()}}{
+\if{html}{\out{<a id="method-MovidaModel-getFEA"></a>}}
+\if{latex}{\out{\hypertarget{method-MovidaModel-getFEA}{}}}
+\subsection{Method \code{getFEA()}}{
 Get functional enrichment analysis results.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_fea(source, contrast, FDRpvalue = NULL, FDRadj = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$getFEA(source, contrast, FDRpvalue = NULL, FDRadj = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -313,18 +313,18 @@ Returns assay data or SummarizedExperiment object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MovidaModel-get_related_features"></a>}}
-\if{latex}{\out{\hypertarget{method-MovidaModel-get_related_features}{}}}
-\subsection{Method \code{get_related_features()}}{
+\if{html}{\out{<a id="method-MovidaModel-get_relatedfeatures"></a>}}
+\if{latex}{\out{\hypertarget{method-MovidaModel-get_relatedfeatures}{}}}
+\subsection{Method \code{get_relatedfeatures()}}{
 Get related features across omics types.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_related_features(feature, target)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_relatedfeatures(feature, target)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{feature}}{Feature identifier (Ensembl, InChI, or UniProt).}
+\item{\code{feature}}{feature identifier (Ensembl, InChI, or UniProt).}
 
 \item{\code{target}}{Target omics type: "proteomics", "transcriptomics", or "metabolomics".}
 }
@@ -335,12 +335,12 @@ Returns related features in the target omics type.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MovidaModel-get_values_features"></a>}}
-\if{latex}{\out{\hypertarget{method-MovidaModel-get_values_features}{}}}
-\subsection{Method \code{get_values_features()}}{
+\if{html}{\out{<a id="method-MovidaModel-get_valuesfeatures"></a>}}
+\if{latex}{\out{\hypertarget{method-MovidaModel-get_valuesfeatures}{}}}
+\subsection{Method \code{get_valuesfeatures()}}{
 Get values for specified features.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_values_features(features, source)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_valuesfeatures(features, source, return_se = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -357,12 +357,12 @@ Returns assay data for the specified features.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MovidaModel-get_pathway_features"></a>}}
-\if{latex}{\out{\hypertarget{method-MovidaModel-get_pathway_features}{}}}
-\subsection{Method \code{get_pathway_features()}}{
+\if{html}{\out{<a id="method-MovidaModel-get_pathwayfeatures"></a>}}
+\if{latex}{\out{\hypertarget{method-MovidaModel-get_pathwayfeatures}{}}}
+\subsection{Method \code{get_pathwayfeatures()}}{
 Get features associated with a pathway.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_pathway_features(pathway, contrast, source)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_pathwayfeatures(pathway, contrast, source)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -417,7 +417,7 @@ Returns assay data or SummarizedExperiment object for the subset.
 \subsection{Method \code{get_values_samples()}}{
 Get values for specified samples.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_values_samples(samples, source)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_values_samples(samples, source, return_se = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -425,7 +425,9 @@ Get values for specified samples.
 \describe{
 \item{\code{samples}}{Vector of sample names.}
 
-\item{\code{source}}{Data source: "proteomics", "transcriptomics", or "metabolomics".}
+\item{\code{source}}{String: "proteomics", "transcriptomics", or "metabolomics".}
+
+\item{\code{return_se}}{Bool: whether to return a SummarizedExperiment object or just the assay data.}
 }
 \if{html}{\out{</div>}}
 }
@@ -434,12 +436,12 @@ Returns SummarizedExperiment object for the specified samples.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MovidaModel-get_features_list"></a>}}
-\if{latex}{\out{\hypertarget{method-MovidaModel-get_features_list}{}}}
-\subsection{Method \code{get_features_list()}}{
+\if{html}{\out{<a id="method-MovidaModel-getfeatures_all"></a>}}
+\if{latex}{\out{\hypertarget{method-MovidaModel-getfeatures_all}{}}}
+\subsection{Method \code{getfeatures_all()}}{
 Get list of features for a source.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_features_list(source)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$getfeatures_all(source)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
