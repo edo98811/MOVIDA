@@ -90,7 +90,27 @@ MovidaModel <- R6Class("MovidaModel",
     inchi_to_ensembl = NULL,
     inchi_to_uniprot = NULL,
     uniprot_to_ensembl = NULL,
-    organism = NULL
+    organism = NULL,
+        get_dde_object = function(source) {
+
+      # Validate that 'source' is a single string
+      if (!is.character(source) || length(source) != 1) {
+        warning("get_dde_object: Argument 'source' must be a single string.")
+        return(NULL)
+      }
+
+      # Select the appropriate SummarizedExperiment object based on the source
+      if (source == "proteomics") {
+        dde <- private$dde_prot
+      } else if (source == "transcriptomics") {
+        dde <- private$dde_trans
+      } else if (source == "metabolomics") {
+        dde <- private$dde_metabo
+      } else {
+        stop("get_dde_object: Invalid source type.")
+      }
+      return(dde)
+    }
   ),
   public = list(
     #' @description Initialize the MovidaModel object with data.
@@ -116,7 +136,12 @@ MovidaModel <- R6Class("MovidaModel",
         }
       }
     },
-
+    #' @description Get the SummarizedExperiment object for a specific source.
+    #' 
+    #' @param source A character string indicating the source type: "proteomics", "transcriptomics", or "metabolomics".
+    #' 
+    #' @return Returns the corresponding SummarizedExperiment object.
+    get_dde_object_exposed = function(source) { private$get_dde_object(source) },
     #' @description Funtion to build the relationships datasetss
     build_relationships = function() {
       # Use parallel processing for building relationships!! used for inchi relationships
@@ -153,7 +178,6 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @return A character vector of unique contrast names found across the specified elements of `movida_list`.
     get_contrasts = function() {
-
       return(
         unique(unlist(
           list(
@@ -248,24 +272,22 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @return Returns a data frame of DEA results filtered by FDR thresholds.
     getDEA = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
-      if (!is.character(source) || length(source) != 1) {
-        warning("Argument 'source' must be a single string.")
-        return(NULL)
-      }
+
       if (!is.character(contrast) || length(contrast) != 1) {
         warning("Argument 'contrast' must be a single string.")
         return(NULL)
       }
-
-      if (source == "proteomics") {
-        data <- DEA_wrapper(private$dde_prot, contrast, format = "original")
-      } else if (source == "transcriptomics") {
-        data <- DEA_wrapper(private$dde_trans, contrast, format = "original")
-      } else if (source == "metabolomics") {
-        data <- DEA_wrapper(private$dde_metabo, contrast, format = "original")
-      } else {
-        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      
+      data <- DEA_wrapper(private$get_dde_object(source), contrast, format = "original")
+      # if (source == "proteomics") {
+      #   data <- DEA_wrapper(private$dde_prot, contrast, format = "original")
+      # } else if (source == "transcriptomics") {
+      #   data <- DEA_wrapper(private$dde_trans, contrast, format = "original")
+      # } else if (source == "metabolomics") {
+      #   data <- DEA_wrapper(private$dde_metabo, contrast, format = "original")
+      # } else {
+      #   stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
 
       if (is.null(data)) {
         warning("No data found for the specified source and contrast.")
@@ -293,24 +315,25 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @return Returns a data frame of FEA results filtered by FDR thresholds.
     getFEA = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
-      if (!is.character(source) || length(source) != 1) {
-        warning("Argument 'source' must be a single string.")
-        return(NULL)
-      }
+      # if (!is.character(source) || length(source) != 1) {
+      #   warning("Argument 'source' must be a single string.")
+      #   return(NULL)
+      # }
+      
       if (!is.character(contrast) || length(contrast) != 1) {
         warning("Argument 'contrast' must be a single string.")
         return(NULL)
       }
-
-      if (source == "proteomics") {
-        data <- FEA_wrapper(private$dde_prot, contrast, format = "original")
-      } else if (source == "transcriptomics") {
-        data <- FEA_wrapper(private$dde_trans, contrast, format = "original")
-      } else if (source == "metabolomics") {
-        data <- FEA_wrapper(private$dde_metabo, contrast, format = "original")
-      } else {
-        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      data <- FEA_wrapper(private$get_dde_object(source), contrast, format = "original")
+      # if (source == "proteomics") {
+      #   data <- FEA_wrapper(private$dde_prot, contrast, format = "original")
+      # } else if (source == "transcriptomics") {
+      #   data <- FEA_wrapper(private$dde_trans, contrast, format = "original")
+      # } else if (source == "metabolomics") {
+      #   data <- FEA_wrapper(private$dde_metabo, contrast, format = "original")
+      # } else {
+      #   stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
 
       if (is.null(data)) {
         warning("No data found for the specified source and contrast.")
@@ -338,27 +361,28 @@ MovidaModel <- R6Class("MovidaModel",
     #' @return Returns assay data or SummarizedExperiment object.
     get_values_all = function(source, return_se = FALSE) {
       # Validate that 'source' is a single string
-      if (!is.character(source) || length(source) != 1) {
-        warning("Argument 'source' must be a single string.")
-        return(NULL)
-      }
+      # if (!is.character(source) || length(source) != 1) {
+      #   warning("Argument 'source' must be a single string.")
+      #   return(NULL)
+      # }
 
       # Select the appropriate SummarizedExperiment object based on the source
-      if (source == "proteomics") {
-        se <- private$dde_prot
-      } else if (source == "transcriptomics") {
-        se <- private$dde_trans
-      } else if (source == "metabolomics") {
-        se <- private$dde_metabo
-      } else {
-        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      dde <- private$get_dde_object(source)
+      # if (source == "proteomics") {
+      #   se <- private$dde_prot
+      # } else if (source == "transcriptomics") {
+      #   se <- private$dde_trans
+      # } else if (source == "metabolomics") {
+      #   se <- private$dde_metabo
+      # } else {
+      #   stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
 
       # Return the assay data or the SummarizedExperiment object based on 'return_se'
       if (return_se) {
-        return(se) # Return the assay data (matrix of values)
+        return(dde) # Return the assay data (matrix of values)
       } else {
-        return(assay(se)) # Return the SummarizedExperiment object
+        return(assay(dde)) # Return the SummarizedExperiment object
       }
     },
 
@@ -368,7 +392,7 @@ MovidaModel <- R6Class("MovidaModel",
     #' @param target Target omics type: "proteomics", "transcriptomics", or "metabolomics".
     #'
     #' @return Returns related features in the target omics type.
-    get_relatedfeatures = function(feature, target) {
+    get_related_features = function(feature, target) {
       if (!is.character(c(feature))) {
         warning("Argument 'features' must be a vector of strings.")
         return(NULL)
@@ -428,23 +452,24 @@ MovidaModel <- R6Class("MovidaModel",
       }
 
       # Select the appropriate SummarizedExperiment object based on the source
-      if (source == "proteomics") {
-        dde <- private$dde_prot
-      } else if (source == "transcriptomics") {
-        dde <- private$dde_trans
-      } else if (source == "metabolomics") {
-        dde <- private$dde_metabo
-      } else {
-        stop("Invalid source type. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      dde_source <- private$get_dde_object(source)
+      # if (source == "proteomics") {
+      #   dde <- private$dde_prot
+      # } else if (source == "transcriptomics") {
+      #   dde <- private$dde_trans
+      # } else if (source == "metabolomics") {
+      #   dde <- private$dde_metabo
+      # } else {
+      #   stop("Invalid source type. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
 
       # Handle errors
-      if (!all(features %in% rownames(dde))) {
+      if (!all(features %in% rownames(dde_source))) {
         if (length(features) == 0) {
           warning("No features provided. Returning NULL.")
           return(NULL)
         }
-        subset <- features[features %in% rownames(dde)]
+        subset <- features[features %in% rownames(dde_source)]
         if (length(subset) == 0) {
           warning("No features found in the dataset.")
           return(NULL)
@@ -455,9 +480,9 @@ MovidaModel <- R6Class("MovidaModel",
         }
       }
       if (return_se) {
-        return(dde[features, ]) # Return the SummarizedExperiment object
+        return(dde_source[features, ]) # Return the SummarizedExperiment object
       } else {
-        return(assay(dde)[features, , drop = FALSE])
+        return(assay(dde_source)[features, , drop = FALSE])
       }
     },
 
@@ -474,7 +499,7 @@ MovidaModel <- R6Class("MovidaModel",
         warning("Argument 'pathway' must be a single string.")
         return(NULL)
       }
-    
+
       enrich_res <- self$getFEA(source, contrast)
 
       if (is.null(enrich_res)) {
@@ -521,15 +546,16 @@ MovidaModel <- R6Class("MovidaModel",
       }
 
       # Select the appropriate SummarizedExperiment object based on the source
-      if (source == "proteomics") {
-        dde_source <- private$dde_prot
-      } else if (source == "transcriptomics") {
-        dde_source <- private$dde_trans
-      } else if (source == "metabolomics") {
-        dde_source <- private$dde_metabo
-      } else {
-        stop("Invalid source type. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      dde_source <- private$get_dde_object(source)
+      # if (source == "proteomics") {
+      #   dde_source <- private$dde_prot
+      # } else if (source == "transcriptomics") {
+      #   dde_source <- private$dde_trans
+      # } else if (source == "metabolomics") {
+      #   dde_source <- private$dde_metabo
+      # } else {
+      #   stop("Invalid source type. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
 
       # Check that the column exists in colData(dde_source)
       if (!column %in% colnames(colData(dde_source))) {
@@ -574,15 +600,16 @@ MovidaModel <- R6Class("MovidaModel",
       }
 
       # Select the appropriate SummarizedExperiment object based on the source
-      if (source == "proteomics") {
-        dde_source <- private$dde_prot
-      } else if (source == "transcriptomics") {
-        dde_source <- private$dde_trans
-      } else if (source == "metabolomics") {
-        dde_source <- private$dde_metabo
-      } else {
-        stop("Invalid source type. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      dde_source <- private$get_dde_object(source)
+      # if (source == "proteomics") {
+      #   dde_source <- private$dde_prot
+      # } else if (source == "transcriptomics") {
+      #   dde_source <- private$dde_trans
+      # } else if (source == "metabolomics") {
+      #   dde_source <- private$dde_metabo
+      # } else {
+      #   stop("Invalid source type. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
 
       # Check that all samples in 'samples' are present in colnames(dde_source)
       if (!all(samples %in% colnames(dde_source))) {
@@ -613,15 +640,16 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @return Returns a data frame of feature identifiers.
     getfeatures_all = function(source) {
-      if (source == "proteomics") {
-        return(rownames(private$dde_prot))
-      } else if (source == "transcriptomics") {
-        return(rownames(private$dde_trans))
-      } else if (source == "metabolomics") {
-        return(rownames(private$dde_metabo))
-      } else {
-        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      return(rownames(private$get_dde_object(source)))
+      # if (source == "proteomics") {
+      #   return(rownames(private$dde_prot))
+      # } else if (source == "transcriptomics") {
+      #   return(rownames(private$dde_trans))
+      # } else if (source == "metabolomics") {
+      #   return(rownames(private$dde_metabo))
+      # } else {
+      #   stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
     },
 
     #' @description Get metadata column names for a source.
@@ -630,15 +658,16 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @return Returns a vector of metadata column names.
     get_metadata_columns = function(source) {
-      if (source == "proteomics") {
-        return(colnames(colData(private$dde_prot)))
-      } else if (source == "transcriptomics") {
-        return(colnames(colData(private$dde_trans)))
-      } else if (source == "metabolomics") {
-        return(colnames(colData(private$dde_metabo)))
-      } else {
-        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      return(colnames(private$get_dde_object(source)))
+      # if (source == "proteomics") {
+      #   return(colnames(colData(private$dde_prot)))
+      # } else if (source == "transcriptomics") {
+      #   return(colnames(colData(private$dde_trans)))
+      # } else if (source == "metabolomics") {
+      #   return(colnames(colData(private$dde_metabo)))
+      # } else {
+      #   stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
     },
 
     #' @description Get metadata for a source.
@@ -647,15 +676,16 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @return Returns metadata for the specified source.
     get_metadata = function(source) {
-      if (source == "proteomics") {
-        return(data.frame(colData(private$dde_prot)))
-      } else if (source == "transcriptomics") {
-        return(data.frame(colData(private$dde_trans)))
-      } else if (source == "metabolomics") {
-        return(data.frame(colData(private$dde_metabo)))
-      } else {
-        stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
-      }
+      return(data.frame(colData(private$get_dde_object(source))))
+      # if (source == "proteomics") {
+      #   return(data.frame(colData(private$dde_prot)))
+      # } else if (source == "transcriptomics") {
+      #   return(data.frame(colData(private$dde_trans)))
+      # } else if (source == "metabolomics") {
+      #   return(data.frame(colData(private$dde_metabo)))
+      # } else {
+      #   stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
+      # }
     }
   )
 )
