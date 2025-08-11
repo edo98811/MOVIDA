@@ -59,12 +59,12 @@ plot_heatmap_movida <- function(se,
 
   # Select features to plot and check their presence
   if (!is.null(row_column)) {
-    available_features <- features[features %in% rowData(se)[[row_column]]]
-    feature_indices <- match(available_features, rowData(se)[[row_column]])
+    availablefeatures <- features[features %in% rowData(se)[[row_column]]]
+    feature_indices <- match(availablefeatures, rowData(se)[[row_column]])
     heatmap_data <- assay(se)[feature_indices, , drop = FALSE]
   } else {
-    available_features <- features[features %in% rownames(se)]
-    heatmap_data <- assay(se)[available_features, , drop = FALSE]
+    availablefeatures <- features[features %in% rownames(se)]
+    heatmap_data <- assay(se)[availablefeatures, , drop = FALSE]
   }
 
   # to avoid problems later, remove the ones non-expressed and with variance = 0
@@ -147,4 +147,4 @@ plot_heatmap_movida <- function(se,
   # return(ch)
 }
 
-# idea -> mettere solo la funzione per creare la heatamp, le altre operazioni nel overview.
+# iDEA -> mettere solo la funzione per creare la heatamp, le altre operazioni nel overview.

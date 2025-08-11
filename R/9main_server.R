@@ -13,9 +13,9 @@ server <- function(input, output, session, movida_data) {
   )
 
   # Reactive data frame to store and update data dynamically
-  bookmarked_features <- reactiveVal(data.frame())
+  bookmarkedfeatures <- reactiveVal(data.frame())
 
-  output$selected_feature <- renderUI({
+  output$selectedfeature <- renderUI({
     if (!is.null(selected_row_source$selected)) {
       div(
         style = "background-color: rgba(0, 128, 0, 0.8); height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 20px 20px; color: white;",
@@ -60,5 +60,5 @@ server <- function(input, output, session, movida_data) {
     })
   })
 
-  mod_plotting_server("plotting", dashboard_elements, bookmarked_features, movida_data)
+  mod_plotting_server("plotting", dashboard_elements, bookmarkedfeatures, movida_data)
 }

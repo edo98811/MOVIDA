@@ -147,9 +147,9 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
             {
               if (is_filtering()) {
                 req(row_to_select$selected)
-                data <- movida_data$get_related_features(row_to_select$selected, source)
+                data <- movida_data$get_relatedfeatures(row_to_select$selected, source)
               } else {
-                data <- movida_data$get_features_list(source)
+                data <- movida_data$getfeatures_all(source)
               }
 
               data <- data.frame(features = data, stringsAsFactors = FALSE)
@@ -185,7 +185,7 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
         mod_table_server(
           id = paste0("de_", source),
           main_table_function = reactive({
-            return(movida_data$get_dea(source, contrast(), FDRpvalue = NULL, FDRadj = NULL))
+            return(movida_data$getDEA(source, contrast(), FDRpvalue = NULL, FDRadj = NULL))
           }),
           selected_row = row_to_select
         )
@@ -193,7 +193,7 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
         mod_table_server(
           id = paste0("enrich_", source),
           main_table_function = reactive({
-            movida_data$get_fea(source, contrast())
+            movida_data$getFEA(source, contrast())
           }),
           selected_row = row_to_select
         )

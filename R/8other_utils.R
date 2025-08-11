@@ -1,38 +1,38 @@
-fea_names_wrapper <- function(...) {
+FEANames_wrapper <- function(...) {
   tryCatch(
-    DeeDeeExperiment::fea_names(...),
+    DeeDeeExperiment::FEANames(...),
     error = function(e) {
-      warning("get_fea_list_wrapper error: ", conditionMessage(e))
+      warning("getFEA_list_wrapper error: ", conditionMessage(e))
       NULL
     }
   )
 }
 
-dea_names_wrapper <- function(...) {
+DEANames_wrapper <- function(...) {
   tryCatch(
-    DeeDeeExperiment::dea_names(...),
+    DeeDeeExperiment::DEANames(...),
     error = function(e) {
-      warning("get_dea_list_wrapper error: ", conditionMessage(e))
+      warning("getDEA_list_wrapper error: ", conditionMessage(e))
       NULL
     }
   )
 }
 
-fea_wrapper <- function(...) {
+FEA_wrapper <- function(...) {
   tryCatch(
-    DeeDeeExperiment::fea(...),
+    DeeDeeExperiment::FEA(...),
     error = function(e) {
-      warning("fea_wrapper error: ", conditionMessage(e))
+      warning("FEA_wrapper error: ", conditionMessage(e))
       NULL
     }
   )
 }
 
-dea_wrapper <- function(...) {
+DEA_wrapper <- function(...) {
   tryCatch(
-    DeeDeeExperiment::dea(...),
+    DeeDeeExperiment::DEA(...),
     error = function(e) {
-      warning("dea_wrapper error: ", conditionMessage(e))
+      warning("DEA_wrapper error: ", conditionMessage(e))
       NULL
     }
   )

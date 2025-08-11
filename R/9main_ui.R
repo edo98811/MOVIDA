@@ -10,7 +10,7 @@ ui <- page_fillable(
     ),
     nav_panel(
       title = "Overview",
-      uiOutput("selected_feature"), # Placeholder for the sidebar UI
+      uiOutput("selectedfeature"), # Placeholder for the sidebar UI
       layout_sidebar(
         sidebar = sidebar(uiOutput("sidebar_ui"), width = 460, position = "right"), # dynamically rendered sidebar
         mod_overview_ui("overview")

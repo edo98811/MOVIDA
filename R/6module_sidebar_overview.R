@@ -84,7 +84,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
           })
 
           plot_function <- function(export_data = FALSE) {
-            features <- movida_data$get_pathway_features(pathway, contrast, source)
+            features <- movida_data$get_pathwayfeatures(pathway, contrast, source)
             se <- movida_data$get_values_all(source, return_se = TRUE)
 
             plot_heatmap_movida(
@@ -131,7 +131,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
         # 1. For each omics source (transcriptomics, proteomics, metabolomics):
         #    - Add buttons to filter by contrast (maybe another select contrast specific to the navbar overview) and to select grouping columns
         # 2. When a feature is selected:
-        #    - Retrieve related features using get_related_features()
+        #    - Retrieve related features using get_relatedfeatures()
         #    - Generate a plot for each related feature
         #    - Add selection and bookmark buttons for each plot
         # 3. Update UI reactively when selection changes
@@ -140,13 +140,13 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
         # Iterate through each source and create a UI output for each
         output$sidepanel_title <- renderUI({
           req(selected_row_source$selected)
-          return(tags$h4(paste0("Features related to ", selected_row_source$selected)))
+          return(tags$h4(paste0("features related to ", selected_row_source$selected)))
         })
 
         lapply(sources, function(source) {
           output[[paste0("sidebar_ui_plots_", source)]] <- renderUI({
             req(selected_row_source$selected)
-            related_features <- movida_data$get_related_features(selected_row_source$selected, source)
+            relatedfeatures <- movida_data$get_relatedfeatures(selected_row_source$selected, source)
 
             # return UI elements for filtering
             list(
@@ -169,7 +169,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
                 )
               ),
               # Generate a plot for each related feature
-              lapply(related_features, function(feature) {
+              lapply(relatedfeatures, function(feature) {
                 div(
                   hr(),
                   mod_plot_ui(
@@ -203,7 +203,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
 
         lapply(sources, function(source) {
           req(selected_row_source$selected)
-          related_features <- movida_data$get_related_features(selected_row_source$selected, source)
+          relatedfeatures <- movida_data$get_relatedfeatures(selected_row_source$selected, source)
 
           # observe event for select filtering column (does this need to be rectie?)
           group_by <- reactive({
@@ -239,7 +239,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
 
           # For each related feature, set up the select and bookmark button observers
           # Then create the plotting function, call the plot_module server
-          lapply(related_features, function(feature) {
+          lapply(relatedfeatures, function(feature) {
             selected_metadata_subset <- reactive({
               input[[paste0("subset_group_", source)]]
             })

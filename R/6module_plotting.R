@@ -132,8 +132,8 @@ mod_plotting_server <- function(id, dashboard_elements, bookmarked_elements, mov
     output$features_search_box_ui <- renderUI({
       selectInput(
         ns("features_search_box"),
-        "Select Features to Plot",
-        choices = movida_data$get_features_list(input$source_selector),
+        "Select features to Plot",
+        choices = movida_data$getfeatures_all(input$source_selector),
         multiple = TRUE,
         selected = NULL
       )

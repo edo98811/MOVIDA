@@ -46,22 +46,22 @@
 #'
 #' - `get_contrasts()`: Returns a list of available contrasts (comparisons) in the analysis.
 #'
-#' - `get_dea(target, contrast, FDRpvalue = NULL, FDRadj = NULL)`: Retrieves differential expression results
+#' - `getDEA(target, contrast, FDRpvalue = NULL, FDRadj = NULL)`: Retrieves differential expression results
 #'   for the given data target and contrast, with optional FDR-based filtering.
 #'
-#' - `get_fea(target, contrast, FDRpvalue = NULL, FDRadj = NULL)`: Retrieves functional enrichment analysis results
+#' - `getFEA(target, contrast, FDRpvalue = NULL, FDRadj = NULL)`: Retrieves functional enrichment analysis results
 #'   for the specified target and contrast, with optional filtering.
 #'
 #' - `get_values_all(target, return_se = FALSE)`: Returns all assay data (or `SummarizedExperiment` object)
 #'   for the selected data target.
 #'
-#' - `get_values_features(features, source = NULL)`: Retrieves expression data for specific features.
+#' - `get_valuesfeatures(features, source = NULL)`: Retrieves expression data for specific features.
 #'
 #' - `get_values_group(groups, source)`: Returns data for specified experimental groups.
 #'
 #' - `get_values_samples(samples, source)`: Returns data for specific sample IDs.
 #'
-#' - `get_related_features(feature, target)`: Maps a feature identifier (e.g., InChI, UniProt, Ensembl)
+#' - `get_relatedfeatures(feature, target)`: Maps a feature identifier (e.g., InChI, UniProt, Ensembl)
 #'   to its related identifiers in other omics layers.
 #'
 #' - `get_inchi_to_ensembl()`, `get_inchi_to_uniprot()`, `get_uniprot_to_ensembl()`: Accessors for relationship mappings
@@ -157,9 +157,9 @@ MovidaModel <- R6Class("MovidaModel",
       return(
         unique(unlist(
           list(
-            dea_names_wrapper(private$dde_prot),
-            dea_names_wrapper(private$dde_trans),
-            dea_names_wrapper(private$dde_metabo)
+            DEANames_wrapper(private$dde_prot),
+            DEANames_wrapper(private$dde_trans),
+            DEANames_wrapper(private$dde_metabo)
           )
         ))
       )
@@ -227,6 +227,17 @@ MovidaModel <- R6Class("MovidaModel",
     get_uniprot_to_ensembl = function() {
       return(private$uniprot_to_ensembl)
     },
+    # #' @description Get differential expression analysis results.
+    # #'
+    # #' @param source Data source: "proteomics", "transcriptomics", or "metabolomics".
+    # #' @param contrast Contrast name.
+    # #' @param FDRpvalue Optional FDR p-value threshold.
+    # #' @param FDRadj Optional FDR adjusted value threshold.
+    # #'
+    # #' @return Returns a data frame of DEA results filtered by FDR thresholds.
+    # get_objects = function() {
+    #   return(names(private$object_list))
+    # },
 
     #' @description Get differential expression analysis results.
     #'
@@ -236,7 +247,7 @@ MovidaModel <- R6Class("MovidaModel",
     #' @param FDRadj Optional FDR adjusted value threshold.
     #'
     #' @return Returns a data frame of DEA results filtered by FDR thresholds.
-    get_dea = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
+    getDEA = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
       if (!is.character(source) || length(source) != 1) {
         warning("Argument 'source' must be a single string.")
         return(NULL)
@@ -247,11 +258,11 @@ MovidaModel <- R6Class("MovidaModel",
       }
 
       if (source == "proteomics") {
-        data <- dea_wrapper(private$dde_prot, contrast, format = "original")
+        data <- DEA_wrapper(private$dde_prot, contrast, format = "original")
       } else if (source == "transcriptomics") {
-        data <- dea_wrapper(private$dde_trans, contrast, format = "original")
+        data <- DEA_wrapper(private$dde_trans, contrast, format = "original")
       } else if (source == "metabolomics") {
-        data <- dea_wrapper(private$dde_metabo, contrast, format = "original")
+        data <- DEA_wrapper(private$dde_metabo, contrast, format = "original")
       } else {
         stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
@@ -281,7 +292,7 @@ MovidaModel <- R6Class("MovidaModel",
     #' @param FDRadj Optional FDR adjusted value threshold.
     #'
     #' @return Returns a data frame of FEA results filtered by FDR thresholds.
-    get_fea = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
+    getFEA = function(source, contrast, FDRpvalue = NULL, FDRadj = NULL) {
       if (!is.character(source) || length(source) != 1) {
         warning("Argument 'source' must be a single string.")
         return(NULL)
@@ -292,11 +303,11 @@ MovidaModel <- R6Class("MovidaModel",
       }
 
       if (source == "proteomics") {
-        data <- fea_wrapper(private$dde_prot, contrast, format = "original")
+        data <- FEA_wrapper(private$dde_prot, contrast, format = "original")
       } else if (source == "transcriptomics") {
-        data <- fea_wrapper(private$dde_trans, contrast, format = "original")
+        data <- FEA_wrapper(private$dde_trans, contrast, format = "original")
       } else if (source == "metabolomics") {
-        data <- fea_wrapper(private$dde_metabo, contrast, format = "original")
+        data <- FEA_wrapper(private$dde_metabo, contrast, format = "original")
       } else {
         stop("Invalid source. Must be one of 'proteomics', 'transcriptomics', or 'metabolomics'.")
       }
@@ -353,11 +364,11 @@ MovidaModel <- R6Class("MovidaModel",
 
     #' @description Get related features across omics types.
     #'
-    #' @param feature Feature identifier (Ensembl, InChI, or UniProt).
+    #' @param feature feature identifier (Ensembl, InChI, or UniProt).
     #' @param target Target omics type: "proteomics", "transcriptomics", or "metabolomics".
     #'
     #' @return Returns related features in the target omics type.
-    get_related_features = function(feature, target) {
+    get_relatedfeatures = function(feature, target) {
       if (!is.character(c(feature))) {
         warning("Argument 'features' must be a vector of strings.")
         return(NULL)
@@ -365,7 +376,7 @@ MovidaModel <- R6Class("MovidaModel",
 
       # Validate that the features are of a recognized type (Ensembl, inchi, or UniProt)
       if (!suppressWarnings(check_ensembl(c(feature))) && !suppressWarnings(check_inchi(c(feature))) && !suppressWarnings(check_uniprot(c(feature)))) {
-        warning("Error:get_related_features, features must be of type Ensembl, inchi, or UniProt.")
+        warning("Error:get_relatedfeatures, features must be of type Ensembl, inchi, or UniProt.")
         return(NULL)
       }
 
@@ -457,14 +468,14 @@ MovidaModel <- R6Class("MovidaModel",
     #' @param source Data source: "proteomics", "transcriptomics", or "metabolomics".
     #'
     #' @return Returns a vector of feature identifiers in the pathway.
-    get_pathway_features = function(pathway, contrast, source) {
+    get_pathwayfeatures = function(pathway, contrast, source) {
       # Validate that 'pathway' is a single string
       if (!is.character(pathway) || length(pathway) != 1 || suppressWarnings(check_goterm(pathway))) {
         warning("Argument 'pathway' must be a single string.")
         return(NULL)
       }
     
-      enrich_res <- self$get_fea(source, contrast)
+      enrich_res <- self$getFEA(source, contrast)
 
       if (is.null(enrich_res)) {
         warning("No enrichment results found for the specified pathway and contrast.")
@@ -528,7 +539,7 @@ MovidaModel <- R6Class("MovidaModel",
 
       # Check that all groups in 'groups' are present in colData(dde_source)$group
       if (!all(subset %in% colData(dde_source)[[column]])) {
-        subset_subset <- features[subset %in% colData(dde_source)[[column]]]
+        subset_subset <- subset[subset %in% colData(dde_source)[[column]]]
         if (length(subset_subset) == 0) {
           warning("No subset found in the metadata. Returning NULL.")
           return(NULL)
@@ -551,7 +562,8 @@ MovidaModel <- R6Class("MovidaModel",
     #' @description Get values for specified samples.
     #'
     #' @param samples Vector of sample names.
-    #' @param source Data source: "proteomics", "transcriptomics", or "metabolomics".
+    #' @param source String: "proteomics", "transcriptomics", or "metabolomics".
+    #' @param return_se Bool: whether to return a SummarizedExperiment object or just the assay data.
     #'
     #' @return Returns SummarizedExperiment object for the specified samples.
     get_values_samples = function(samples, source, return_se = FALSE) {
@@ -600,7 +612,7 @@ MovidaModel <- R6Class("MovidaModel",
     #' @param source Data source: "proteomics", "transcriptomics", or "metabolomics".
     #'
     #' @return Returns a data frame of feature identifiers.
-    get_features_all = function(source) {
+    getfeatures_all = function(source) {
       if (source == "proteomics") {
         return(rownames(private$dde_prot))
       } else if (source == "transcriptomics") {
