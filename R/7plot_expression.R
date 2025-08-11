@@ -52,12 +52,14 @@ plot_expression_movida <- function(entity, se_object, export_data = FALSE, data_
   display_name <- entity
 
   # Determine background color based on data type
-  if (check_uniprot(entity)) {
-    bg_color <- "#ffe9e9" # Light red for proteomics
-  } else if (check_ensembl(entity)) {
-    bg_color <- "#e8f8fe" # Light blue for transcriptomics
-  } else if (check_inchi(entity)) {
-    bg_color <- "#ffffdd" # Light yellow for metabolomics
+  bg_color <- if (suppressWarnings(check_uniprot(entity))) {
+    "#ffe9e9"  # Light red for proteomics
+  } else if (suppressWarnings(check_ensembl(entity))) {
+    "#e8f8fe"  # Light blue for transcriptomics
+  } else if (suppressWarnings(check_inchi(entity))) {
+    "#ffffdd"  # Light yellow for metabolomics
+  } else {
+    "#f0f0f0"  # Default light gray for unknown
   }
 
   # plotting_data <- plotting_data[order(plotting_data$group), ]

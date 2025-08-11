@@ -6,7 +6,6 @@
 #' @param se_object A \code{SummarizedExperiment} object containing the expression data and sample metadata.
 #' @param group_var A character string specifying the column name in \code{colData(se_object)} to use for grouping samples. Default is \code{"group"}.
 #' @param export_data Logical; if \code{TRUE}, the function returns the data used for plotting instead of the plot. Default is \code{FALSE}.
-#' @param data_type A character string indicating the type of data (for annotation purposes). Default is \code{"unknown"}.
 #'
 #' @return A \code{ggplot} object showing the average expression per entity across groups, or a data frame with the plotting data if \code{export_data = TRUE}. If none of the entities are found, returns a plot with a warning message.
 #'
@@ -16,8 +15,7 @@
 #' @import ggplot2
 #' @importFrom SummarizedExperiment assays colData
 #' @export
-plot_expression_line_movida <- function(entities, se_object, group_var = "group", export_data = FALSE, data_type = "unknown", mean_median = "mean") {
-
+plot_expression_line_movida <- function(entities, se_object, group_var = "group", export_data = FALSE, mean_median = "mean") {
   if (is.null(entities) || length(entities) == 0) {
     return(ggplot() +
       annotate("text",
@@ -29,7 +27,7 @@ plot_expression_line_movida <- function(entities, se_object, group_var = "group"
   }
 
   # Use count matrix from SummarizedExperiment
-  count_matrix <- assays(se_object)$counts
+  count_matrix <- SummarizedExperiment::assay(se_object)
 
   # Check which entities exist in count matrix
   existing_entities <- entities[entities %in% rownames(count_matrix)]
@@ -53,6 +51,10 @@ plot_expression_line_movida <- function(entities, se_object, group_var = "group"
   expr_data <- count_matrix[existing_entities, , drop = FALSE]
 
   # Get group information
+  if (!(group_var %in% colnames(colData(se_object)))) {
+    warning(paste("Group variable", group_var, "not found in colData(se_object)"))
+    return(NULL)
+  }
   group_info <- colData(se_object)[[group_var]]
 
   # Calculate average expression per gene per group
@@ -69,7 +71,11 @@ plot_expression_line_movida <- function(entities, se_object, group_var = "group"
 
       avg_val <- switch(mean_median,
         "mean" = mean(expr_data[entity, group_samples]),
-        "median" = median(expr_data[entity, group_samples])
+        "median" = median(expr_data[entity, group_samples]),
+        {
+          warning("line_plot: mean_median must be either 'mean' or 'median'")
+          return(NULL)
+        }
       )
 
       mean(expr_data[entity, group_samples])
@@ -83,12 +89,12 @@ plot_expression_line_movida <- function(entities, se_object, group_var = "group"
 
   # Export the plotting data if requested
   if (export_data) {
-    return(avg_expr)
+    return(data.frame(avg_expr))
   }
-  
+
   # Create line plot
   ggplot(avg_expr, aes(x = Group, y = Average_Expression, color = Entity, group = Entity)) +
-    geom_line(size = 1.2) +
+    geom_line(linewidth = 1.2) +
     geom_point(size = 3) +
     theme_bw() +
     theme(
