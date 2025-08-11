@@ -27,7 +27,8 @@ create_fake_se <- function(nrow, ncol, name, rowname_type = "symbol") {
   group <- rep(c("A", "B"), length.out = ncol)
   colData <- S4Vectors::DataFrame(
     sample_id = sample_names,
-    group = group
+    group = group,
+    batch = c(rep(1, ncol - 1), 2)  # Add a batch column
   )
   rownames(colData) <- sample_names  # Set sample_id as rownames
   SummarizedExperiment::SummarizedExperiment(assays = list(counts = assay), rowData = rowData, colData = colData)

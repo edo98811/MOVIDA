@@ -105,7 +105,7 @@ relationships <- load_relationships("path/to/relationships_folder")
 \item \href{#method-MovidaModel-get_pathwayfeatures}{\code{MovidaModel$get_pathwayfeatures()}}
 \item \href{#method-MovidaModel-get_values_subset_metadata}{\code{MovidaModel$get_values_subset_metadata()}}
 \item \href{#method-MovidaModel-get_values_samples}{\code{MovidaModel$get_values_samples()}}
-\item \href{#method-MovidaModel-getfeatures_all}{\code{MovidaModel$getfeatures_all()}}
+\item \href{#method-MovidaModel-get_features_all}{\code{MovidaModel$get_features_all()}}
 \item \href{#method-MovidaModel-get_metadata_columns}{\code{MovidaModel$get_metadata_columns()}}
 \item \href{#method-MovidaModel-get_metadata}{\code{MovidaModel$get_metadata()}}
 \item \href{#method-MovidaModel-clone}{\code{MovidaModel$clone()}}
@@ -436,12 +436,12 @@ Returns SummarizedExperiment object for the specified samples.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-MovidaModel-getfeatures_all"></a>}}
-\if{latex}{\out{\hypertarget{method-MovidaModel-getfeatures_all}{}}}
-\subsection{Method \code{getfeatures_all()}}{
+\if{html}{\out{<a id="method-MovidaModel-get_features_all"></a>}}
+\if{latex}{\out{\hypertarget{method-MovidaModel-get_features_all}{}}}
+\subsection{Method \code{get_features_all()}}{
 Get list of features for a source.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$getfeatures_all(source)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{MovidaModel$get_features_all(source)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

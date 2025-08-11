@@ -639,7 +639,7 @@ MovidaModel <- R6Class("MovidaModel",
     #' @param source Data source: "proteomics", "transcriptomics", or "metabolomics".
     #'
     #' @return Returns a data frame of feature identifiers.
-    getfeatures_all = function(source) {
+    get_features_all = function(source) {
       return(rownames(private$get_dde_object(source)))
       # if (source == "proteomics") {
       #   return(rownames(private$dde_prot))

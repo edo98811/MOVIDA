@@ -149,7 +149,7 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
                 req(row_to_select$selected)
                 data <- movida_data$get_relatedfeatures(row_to_select$selected, source)
               } else {
-                data <- movida_data$getfeatures_all(source)
+                data <- movida_data$get_features_all(source)
               }
 
               data <- data.frame(features = data, stringsAsFactors = FALSE)

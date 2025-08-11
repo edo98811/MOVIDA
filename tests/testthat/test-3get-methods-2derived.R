@@ -82,7 +82,7 @@ test_that("get_values_samples_not_existent", {
 })
 
 test_that("get_valuesfeatures", {
-  features <- model$getfeatures_all("proteomics")[1:2]
+  features <- model$get_features_all("proteomics")[1:2]
   result <- model$get_values_features(features, "proteomics")
   dde <- model$get_values_features(features, "proteomics", return_se = TRUE)
 
@@ -101,7 +101,7 @@ test_that("get_valuesfeatures_not_existent", {
   expect_true(is.null(dde))
   expect_true(is.null(result))
 
-  features <- c(model$getfeatures_all("proteomics")[1], "nonexistentfeature2")
+  features <- c(model$get_features_all("proteomics")[1], "nonexistentfeature2")
   expect_warning(result <- model$get_values_features(features, "proteomics"))
   expect_warning(dde <- model$get_values_features(features, "proteomics", return_se = TRUE))
 

@@ -12,8 +12,8 @@ test_that("get_values_all", {
   expect_s4_class(se, "SummarizedExperiment")
 })
 
-test_that("getfeatures_all", {
-  feat <- model$getfeatures_all("proteomics")
+test_that("get_features_all", {
+  feat <- model$get_features_all("proteomics")
   expect_true(is.character(feat))
 })
 
@@ -35,7 +35,7 @@ test_that("get_dde_object", {
   for (source in to_test) {
     dde <- model$get_dde_object_exposed(source)
     expect_s4_class(dde, "DeeDeeExperiment")
-    expect_true(all(rownames(dde) %in% model$getfeatures_all(source)))
+    expect_true(all(rownames(dde) %in% model$get_features_all(source)))
     expect_true(all(colnames(dde) %in% model$get_metadata(source)$sample_id))
   } 
   expect_error(model$get_dde_object_exposed("nonexistent_source"), "get_dde_object: Invalid source type.")

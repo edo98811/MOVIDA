@@ -133,7 +133,7 @@ mod_plotting_server <- function(id, dashboard_elements, bookmarked_elements, mov
       selectInput(
         ns("features_search_box"),
         "Select features to Plot",
-        choices = movida_data$getfeatures_all(input$source_selector),
+        choices = movida_data$get_features_all(input$source_selector),
         multiple = TRUE,
         selected = NULL
       )
