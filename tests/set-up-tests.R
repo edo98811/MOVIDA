@@ -95,27 +95,27 @@ dde_trans <- DeeDeeExperiment::DeeDeeExperiment(se_trans)
 dde_prot <- DeeDeeExperiment::DeeDeeExperiment(se_prot)
 dde_metabo <- DeeDeeExperiment::DeeDeeExperiment(se_metabo)
 
-dde_trans <- DeeDeeExperiment::add_dea(dde_trans, de_results1)
-dde_trans <- DeeDeeExperiment::rename_dea(dde_trans, "de_results1", "A_vs_B")
+dde_trans <- DeeDeeExperiment::addDEA(dde_trans, de_results1)
+dde_trans <- DeeDeeExperiment::renameDEA(dde_trans, "de_results1", "A_vs_B")
 
-dde_prot <- DeeDeeExperiment::add_dea(dde_prot, de_results2)
-dde_prot <- DeeDeeExperiment::rename_dea(dde_prot, "de_results2", "A_vs_B")
+dde_prot <- DeeDeeExperiment::addDEA(dde_prot, de_results2)
+dde_prot <- DeeDeeExperiment::renameDEA(dde_prot, "de_results2", "A_vs_B")
 
-dde_metabo <- DeeDeeExperiment::add_dea(dde_metabo, de_results3)
-dde_metabo <- DeeDeeExperiment::rename_dea(dde_metabo, "de_results3", "A_vs_B")
+dde_metabo <- DeeDeeExperiment::addDEA(dde_metabo, de_results3)
+dde_metabo <- DeeDeeExperiment::renameDEA(dde_metabo, "de_results3", "A_vs_B")
 
 
-dde_trans <- DeeDeeExperiment::add_fea(dde_trans, enrichment_results1, de_name = "A_vs_B")
-dde_trans <- DeeDeeExperiment::rename_fea(dde_trans, "enrichment_results1", "A_vs_B_fea")
-dde_trans <- DeeDeeExperiment::link_dea_and_fea(dde_trans, "A_vs_B", "A_vs_B_fea", force = FALSE)
+dde_trans <- DeeDeeExperiment::addFEA(dde_trans, enrichment_results1, de_name = "A_vs_B")
+dde_trans <- DeeDeeExperiment::renameFEA(dde_trans, "enrichment_results1", "A_vs_BFEA")
+dde_trans <- DeeDeeExperiment::linkDEAandFEA(dde_trans, "A_vs_B", "A_vs_BFEA", force = FALSE)
 
-dde_prot <- DeeDeeExperiment::add_fea(dde_prot, enrichment_results2, de_name = "A_vs_B")
-dde_prot <- DeeDeeExperiment::rename_fea(dde_prot, "enrichment_results2", "A_vs_B_fea")
-dde_prot <- DeeDeeExperiment::link_dea_and_fea(dde_prot, "A_vs_B", "A_vs_B_fea", force = FALSE)
+dde_prot <- DeeDeeExperiment::addFEA(dde_prot, enrichment_results2, de_name = "A_vs_B")
+dde_prot <- DeeDeeExperiment::renameFEA(dde_prot, "enrichment_results2", "A_vs_BFEA")
+dde_prot <- DeeDeeExperiment::linkDEAandFEA(dde_prot, "A_vs_B", "A_vs_BFEA", force = FALSE)
 
-dde_metabo <- DeeDeeExperiment::add_fea(dde_metabo, enrichment_results3, de_name = "A_vs_B")
-dde_metabo <- DeeDeeExperiment::rename_fea(dde_metabo, "enrichment_results3", "A_vs_B_fea")
-dde_metabo <- DeeDeeExperiment::link_dea_and_fea(dde_metabo, "A_vs_B", "A_vs_B_fea", force = FALSE)
+dde_metabo <- DeeDeeExperiment::addFEA(dde_metabo, enrichment_results3, de_name = "A_vs_B")
+dde_metabo <- DeeDeeExperiment::renameFEA(dde_metabo, "enrichment_results3", "A_vs_BFEA")
+dde_metabo <- DeeDeeExperiment::linkDEAandFEA(dde_metabo, "A_vs_B", "A_vs_BFEA", force = FALSE)
 
 # Create shared metadata for all samples
 shared_metadata <- data.frame(

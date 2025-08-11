@@ -56,25 +56,37 @@ create_fake_de_results <- function(se, name, return_type = c("DESeqResults", "MA
   if (return_type == "DESeqResults") {
     return(DESeq2::DESeqResults(res_df))
   } else if (return_type == "MArrayLM") {
-    # Create a minimal MArrayLM object (from limma)
-    fit <- list()
-    fit$coefficients <- matrix(res_df$log2FoldChange, ncol = 1)
-    rownames(fit$coefficients) <- rownames(res_df)
-    colnames(fit$coefficients) <- name
-    fit$stdev.unscaled <- matrix(res_df$lfcSE, ncol = 1)
-    fit$sigma <- rep(1, n)
-    fit$df.residual <- rep(10, n)
-    fit$p.value <- matrix(res_df$pvalue, ncol = 1)
-    rownames(fit$p.value) <- rownames(res_df)
-    colnames(fit$p.value) <- name
-    class(fit) <- "MArrayLM"
-    return(fit)
+ n <- nrow(res_df)
+  fit <- list()
+  fit$coefficients <- matrix(res_df$log2FoldChange, nrow = n, ncol = 1)
+  rownames(fit$coefficients) <- rownames(res_df)
+  colnames(fit$coefficients) <- "logFC"
+  
+  fit$stdev.unscaled <- matrix(res_df$lfcSE, nrow = n, ncol = 1)
+  rownames(fit$stdev.unscaled) <- rownames(res_df)
+  colnames(fit$stdev.unscaled) <- "logFC"
+  
+  fit$sigma <- rep(1, n)
+  fit$df.residual <- rep(10, n)
+  
+  fit$p.value <- matrix(res_df$pvalue, nrow = n, ncol = 1)
+  rownames(fit$p.value) <- rownames(res_df)
+  colnames(fit$p.value) <- "logFC"
+  
+  fit$design <- matrix(1, nrow = n, ncol = 1)
+  rownames(fit$design) <- rownames(res_df)
+  colnames(fit$design) <- "logFC"
+  
+  class(fit) <- "MArrayLM"
+  fit <- limma::eBayes(fit)
+  return(fit)
   }
 }
 
 de_results1 <- create_fake_de_results(se_trans, "A_vs_B")
 de_results2 <- create_fake_de_results(se_prot, "A_vs_B")
 de_results3 <- create_fake_de_results(se_metabo, "A_vs_B")
+de_results4 <- create_fake_de_results(se_trans, "B_vs_C") # , return_type = "MArrayLM"  )
 
 # Create fake enrichment results
 create_fake_enrichment_results <- function(name, n_terms = 5) {
@@ -95,32 +107,36 @@ create_fake_enrichment_results <- function(name, n_terms = 5) {
 enrichment_results1 <- create_fake_enrichment_results("A_vs_B")
 enrichment_results2 <- create_fake_enrichment_results("A_vs_B")
 enrichment_results3 <- create_fake_enrichment_results("A_vs_B")
+enrichment_results4 <- create_fake_enrichment_results("B_vs_C")
 
 dde_trans <- DeeDeeExperiment::DeeDeeExperiment(se_trans)
 dde_prot <- DeeDeeExperiment::DeeDeeExperiment(se_prot)
 dde_metabo <- DeeDeeExperiment::DeeDeeExperiment(se_metabo)
 
-dde_trans <- DeeDeeExperiment::add_dea(dde_trans, de_results1)
-dde_trans <- DeeDeeExperiment::rename_dea(dde_trans, "de_results1", "A_vs_B")
+dde_trans <- DeeDeeExperiment::addDEA(dde_trans, de_results1)
+dde_trans <- DeeDeeExperiment::renameDEA(dde_trans, "de_results1", "A_vs_B")
 
-dde_prot <- DeeDeeExperiment::add_dea(dde_prot, de_results2)
-dde_prot <- DeeDeeExperiment::rename_dea(dde_prot, "de_results2", "A_vs_B")
+dde_trans <- DeeDeeExperiment::addDEA(dde_trans, de_results4)
+dde_trans <- DeeDeeExperiment::renameDEA(dde_trans, "de_results4", "B_vs_C")
 
-dde_metabo <- DeeDeeExperiment::add_dea(dde_metabo, de_results3)
-dde_metabo <- DeeDeeExperiment::rename_dea(dde_metabo, "de_results3", "A_vs_B")
+dde_prot <- DeeDeeExperiment::addDEA(dde_prot, de_results2)
+dde_prot <- DeeDeeExperiment::renameDEA(dde_prot, "de_results2", "A_vs_B")
+
+dde_metabo <- DeeDeeExperiment::addDEA(dde_metabo, de_results3)
+dde_metabo <- DeeDeeExperiment::renameDEA(dde_metabo, "de_results3", "A_vs_B")
 
 
-dde_trans <- DeeDeeExperiment::add_fea(dde_trans, enrichment_results1, de_name = "A_vs_B")
-dde_trans <- DeeDeeExperiment::rename_fea(dde_trans, "enrichment_results1", "A_vs_B_fea")
-dde_trans <- DeeDeeExperiment::link_dea_and_fea(dde_trans, "A_vs_B", "A_vs_B_fea", force = FALSE)
+dde_trans <- DeeDeeExperiment::addFEA(dde_trans, enrichment_results1, de_name = "A_vs_B")
+dde_trans <- DeeDeeExperiment::renameFEA(dde_trans, "enrichment_results1", "A_vs_B")
+dde_trans <- DeeDeeExperiment::linkDEAandFEA(dde_trans, "A_vs_B", "A_vs_B", force = FALSE)
 
-dde_prot <- DeeDeeExperiment::add_fea(dde_prot, enrichment_results2, de_name = "A_vs_B")
-dde_prot <- DeeDeeExperiment::rename_fea(dde_prot, "enrichment_results2", "A_vs_B_fea")
-dde_prot <- DeeDeeExperiment::link_dea_and_fea(dde_prot, "A_vs_B", "A_vs_B_fea", force = FALSE)
+dde_prot <- DeeDeeExperiment::addFEA(dde_prot, enrichment_results2, de_name = "A_vs_B")
+dde_prot <- DeeDeeExperiment::renameFEA(dde_prot, "enrichment_results2", "A_vs_B")
+dde_prot <- DeeDeeExperiment::linkDEAandFEA(dde_prot, "A_vs_B", "A_vs_B", force = FALSE)
 
-dde_metabo <- DeeDeeExperiment::add_fea(dde_metabo, enrichment_results3, de_name = "A_vs_B")
-dde_metabo <- DeeDeeExperiment::rename_fea(dde_metabo, "enrichment_results3", "A_vs_B_fea")
-dde_metabo <- DeeDeeExperiment::link_dea_and_fea(dde_metabo, "A_vs_B", "A_vs_B_fea", force = FALSE)
+dde_metabo <- DeeDeeExperiment::addFEA(dde_metabo, enrichment_results3, de_name = "A_vs_B")
+dde_metabo <- DeeDeeExperiment::renameFEA(dde_metabo, "enrichment_results3", "A_vs_B")
+dde_metabo <- DeeDeeExperiment::linkDEAandFEA(dde_metabo, "A_vs_B", "A_vs_B", force = FALSE)
 
 # Create shared metadata for all samples
 shared_metadata <- data.frame(
@@ -150,13 +166,14 @@ movida_list <- list(
   metadata = NULL
 )
 
-movida_list_shared <- list(
-  dde_prot = dde_prot,
-  dde_metabo = dde_metabo,
-  dde_trans = dde_trans,
-  organism = "Mm",
-  metadata = shared_metadata
-)
+# movida_list_shared <- list(
+#   dde_prot = dde_prot,
+#   dde_metabo = dde_metabo,
+#   dde_trans = dde_trans,
+#   organism = "Mm",
+#   metadata = shared_metadata
+# )
 
 model <-  MovidaModel$new(movida_list)
+# model_shared <-  MovidaModel$new(movida_list_shared)
 message("Setup-tests.R was sourced")
