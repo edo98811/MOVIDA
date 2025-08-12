@@ -30,7 +30,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    sources <- c("transcriptomics", "proteomics", "metabolomics")
+    sources <- movida_data$get_sources()
 
     # sidebar with the heatmaps
     # is it maybe not necessary? can i keep it in the ui?
@@ -104,9 +104,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
           )
         })
       } else if (
-        check_ensembl(selected_row_source$selected) ||
-          check_inchi(selected_row_source$selected) ||
-          check_uniprot(selected_row_source$selected)) {
+        check_is_valid_feature(selected_row_source$selected)) {
         titles <- c(
           transcriptomics = "Gene Expression",
           proteomics = "Protein Abundance",

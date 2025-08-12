@@ -3,13 +3,6 @@
 # UI function for the module
 mod_plotting_ui <- function(id) {
   ns <- NS(id) # Namespace for the module
-
-  sources <- c(
-    "transcriptomics",
-    "proteomics",
-    "metabolomics"
-  )
-
   page_fillable(
     accordion(
       accordion_panel("Line Plot", uiOutput(ns("line_plot"))),
@@ -23,11 +16,7 @@ mod_plotting_server <- function(id, dashboard_elements, bookmarked_elements, mov
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    sources <- c(
-      "transcriptomics",
-      "proteomics",
-      "metabolomics"
-    )
+    sources <- movida_data$get_sources()
     #### UI FOR LINE PLOT ####
     output$line_plot <- renderUI({
       layout_column_wrap(

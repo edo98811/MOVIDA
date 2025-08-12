@@ -38,6 +38,32 @@ check_uniprot <- function(names_to_check) {
   return(TRUE)
 }
 
+# Function to check if names_to_check are of type KEGG
+check_kegg <- function(names_to_check) {
+  invalid_names <- names_to_check[!grepl("^[A-Za-z]{2,4}:[0-9]+$", names_to_check)]
+  if (length(invalid_names) > 0) {
+    warning("check_kegg: The following names_to_check are not valid KEGG IDs: ", paste(invalid_names, collapse = ", "))
+    return(FALSE)
+  }
+  return(TRUE)
+}
+
+check_is_valid_feature <- function(names_to_check) {
+  if (
+      suppressWarnings(check_ensembl(names_to_check))
+      || suppressWarnings(check_symbol(names_to_check))
+      || suppressWarnings(check_uniprot(names_to_check))
+      || suppressWarnings(check_chebi(names_to_check))
+      || suppressWarnings(check_inchi(names_to_check))
+      || suppressWarnings(check_kegg(names_to_check))
+  ) {
+    return(TRUE)
+  } else {
+    warning("check_is_valid_feature: Invalid source type.")
+    return(FALSE)
+  }
+}
+
 # Function to check if names_to_check are of type InChI
 check_inchi <- function(names_to_check) {
   invalid_names <- names_to_check[!grepl("^[A-Z]{14}-[A-Z]{10}-[A-Z]$", names_to_check)]

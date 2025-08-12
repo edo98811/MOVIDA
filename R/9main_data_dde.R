@@ -612,11 +612,11 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @return Returns metadata for the specified source.
     get_sources = function(source) {
-      return(c(
-        transcriptomics = "Transcriptomics",
-        proteomics = "Proteomics",
-        metabolomics = "Metabolomics"
-      ))
+      sources <- c()
+      if (!is.null(private$dde_trans)) sources <- c(sources, transcriptomics = "Transcriptomics")
+      if (!is.null(private$dde_prot)) sources <- c(sources, proteomics = "Proteomics")
+      if (!is.null(private$dde_metabo)) sources <- c(sources, metabolomics = "Metabolomics")
+      return(sources)
     }
   )
 )

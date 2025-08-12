@@ -1,13 +1,6 @@
-
 # UI function for the module
 mod_overview_ui <- function(id) {
   ns <- NS(id) # Namespace for the module
-
-  sources <- c(
-    transcriptomics = "Transcriptomics",
-    proteomics = "Proteomics",
-    metabolomics = "Metabolomics"
-  )
 
   contrast_selector_ui <- function(ns) {
     div(
@@ -20,64 +13,16 @@ mod_overview_ui <- function(id) {
   navset_pill(
     nav_panel(
       title = "Overview",
-      # layout_column_wrap(
-      #   width = 1 / 3,
-      #   fill = FALSE,
-      #   lapply(names(sources), function(source) {
-      #     div(
-      #       h4(sources[[source]]),
-      #       textInput(ns(paste0("feature_", source, "_search_box")), label = "Search:", placeholder = "Type to search..."),
-      #       mod_table_ui(ns(paste0("feature_", source)))
-      #     )
-      #   })
-      # ),
-
-      do.call(layout_column_wrap, c(
-        list(width = 1 / 3, heights_equal = "row"),
-        lapply(names(sources), function(source) {
-          div(
-            br(),
-            h4(sources[[source]]),
-            div(style = "",
-              textInput(ns(paste0("feature_", source, "_search_box")), label = "Search feature", placeholder = "Type to search...")
-            ),
-            mod_table_ui(ns(paste0("feature_", source)))
-          )
-        })
-      )),
+      uiOutput(ns("EntitiesOverview")), # Placeholder for the sidebar UI
       uiOutput(ns("is_filtering_button")) # Placeholder for the sidebar UI
     ),
     nav_panel(
       title = "Differential Expression",
-      div(
-        contrast_selector_ui(ns),
-        br(),
-        div(
-          lapply(names(sources), function(source) {
-            div(
-              h1(sources[[source]]),
-              mod_table_ui(ns(paste0("de_", source))),
-              hr()
-            )
-          })
-        )
-      )
+      uiOutput(ns("DEResults")),
     ),
     nav_panel(
       title = "Enrichment Results",
-      div(
-        contrast_selector_ui(ns),
-        br(),
-        div(
-          lapply(names(sources), function(source) {
-            div(
-              h1(sources[[source]]),
-              mod_table_ui(ns(paste0("enrich_", source))),
-              hr()
-            )
-          })
-        )
-      )
+      uiOutput(ns("EnrichmentResults")),
     )
   )
 }
@@ -88,11 +33,12 @@ mod_overview_ui <- function(id) {
 
 # The lapply loops for generating UI and server logic are efficient but could benefit from caching or memoization if the data sources are large or computationally expensive.
 # Server function for the module
-mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_data) {
+mod_overview_server <- function(id, dashboard_elements, row_to_select) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     contrasts <- movida_data$get_contrasts()
 
+    # Update the contrast selector with available contrasts
     if (length(contrasts) > 0) {
       updateSelectInput(session, "contrast_selector",
         choices = contrasts,
@@ -114,6 +60,7 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
       row_to_select$source <- NULL
     })
 
+    # Function to filter the tables if needed
     output$is_filtering_button <- renderUI({
       if (is.null(row_to_select$selected)) {
         actionButton(ns("is_filtering_button"), label = "Select row to filter")
@@ -129,44 +76,16 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
       is_filtering(!is_filtering())
     })
 
-    sources <- c("transcriptomics", "proteomics", "metabolomics")
-
-    # Freeze the row_to_select$selected value when is_filtering is TRUE
-    # If is_filtering is TRUE, the selected row will not change and the tables are not reactive aymore
-    # observeEvent(is_filtering(), {
-    #   if (is_filtering()) {
-    #     freezeReactiveValue(row_to_select, "selected")
-    #   }
-    # })
+    sources <- movida_data$get_sources()
 
     # Loop through sources to create server logic for DE and enrichment tables
     observeEvent(contrast(), {
       lapply(sources, function(source) {
-        data_function <- reactive({ # this is not a function!! or, it is not a function in a reactive!!
+        # Create a reactive function for the main table data
+        data_function <- reactive({
           tryCatch(
             {
-              if (is_filtering()) {
-                req(row_to_select$selected)
-                data <- movida_data$get_related_features(row_to_select$selected, source)
-              } else {
-                data <- movida_data$get_features_all(source)
-              }
-
-              data <- data.frame(features = data, stringsAsFactors = FALSE)
-              rownames(data) <- data[, 1]
-
-
-              if (!is.null(input[[paste0("feature_", source, "_search_box")]]) &&
-                input[[paste0("feature_", source, "_search_box")]] != "") {
-                search_term <- input[[paste0("feature_", source, "_search_box")]]
-                data <- data[grep(search_term, rownames(data), ignore.case = TRUE), , drop = FALSE]
-              }
-
-              if (is.null(data) || length(data) == 0) {
-                return(NULL)
-              }
-
-              return(data)
+              get_tables(source)
             },
             error = function(e) {
               warning(paste("Error in main_table_function:", e$message))
@@ -185,7 +104,7 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
         mod_table_server(
           id = paste0("de_", source),
           main_table_function = reactive({
-            return(movida_data$getDEA(source, contrast(), FDRpvalue = NULL, FDRadj = NULL))
+            movida_data$getDEA(source, contrast(), FDRpvalue = NULL, FDRadj = NULL)
           }),
           selected_row = row_to_select
         )
@@ -198,6 +117,77 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_da
           selected_row = row_to_select
         )
       })
+    })
+
+
+    get_tables <- function(source) {
+      if (is_filtering()) {
+        req(row_to_select$selected)
+        data <- movida_data$get_related_features(row_to_select$selected, source)
+      } else {
+        data <- movida_data$get_features_all(source)
+      }
+
+      data <- data.frame(features = data, stringsAsFactors = FALSE)
+      rownames(data) <- data[, 1]
+
+      search_box <- input[[paste0("feature_", source, "_search_box")]]
+      if (!is.null(search_box) && search_box != "") {
+        data <- data[grep(search_box, rownames(data), ignore.case = TRUE), , drop = FALSE]
+      }
+
+      if (is.null(data) || nrow(data) == 0) {
+        return(NULL)
+      }
+
+      return(data)
+    }
+
+    output$EnrichmentResults <- renderUI({
+      div(
+        contrast_selector_ui(ns),
+        br(),
+        div(
+          lapply(names(sources), function(source) {
+            div(
+              h1(sources[[source]]),
+              mod_table_ui(ns(paste0("enrich_", source))),
+              hr()
+            )
+          })
+        )
+      )
+    })
+    output$DEResults <- renderUI({
+      div(
+        contrast_selector_ui(ns),
+        br(),
+        div(
+          lapply(names(sources), function(source) {
+            div(
+              h1(sources[[source]]),
+              mod_table_ui(ns(paste0("de_", source))),
+              hr()
+            )
+          })
+        )
+      )
+    })
+    output$EntitiesOverview <- renderUI({
+      do.call(layout_column_wrap, c(
+        list(width = 1 / 3, heights_equal = "row"),
+        lapply(names(sources), function(source) {
+          div(
+            br(),
+            h4(sources[[source]]),
+            div(
+              style = "",
+              textInput(ns(paste0("feature_", source, "_search_box")), label = "Search feature", placeholder = "Type to search...")
+            ),
+            mod_table_ui(ns(paste0("feature_", source)))
+          )
+        })
+      ))
     })
   })
 }
