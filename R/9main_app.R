@@ -18,17 +18,21 @@
 #' @import DT
 #' @export
 MovidaApp <- function(movida_list) {
-
   # Initialize the global data model
   # assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
-  assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
+  # assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
+  movida_data <- MovidaModel$new(movida_list)
   movida_data$load_relationships("relationships/")
-  
+  # set_movida_data(movida_data)
+  # data_store <- new.env()
+  # data_store$movida_data <- readRDS("data/movida_data.rds")
+
+  # initialize_movida_data(movida_list)
   # Wrap server to inject movida_data as argument
   server_wrapper <- function(input, output, session) {
     server(input, output, session, movida_data = movida_data)
   }
-  
+
   shinyApp(ui = ui, server = server_wrapper)
   # shiny::runApp(list(ui = ui, server = server_wrapper), display.mode="showcase")
 }
