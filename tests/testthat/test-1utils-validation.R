@@ -84,3 +84,46 @@ test_that("validate_contrasts returns only valid contrasts", {
   contrasts <- c("A_vs_B", "B_vs_C")
   expect_equal(validate_contrasts(contrasts, groups), c("A_vs_B", "B_vs_C"))
 })
+
+library(testthat)
+
+test_that("check_is_valid_feature returns TRUE for valid Ensembl IDs", {
+  expect_true(check_is_valid_feature(c("ENSG000001", "ENSMUSG000000")))
+})
+
+test_that("check_is_valid_feature returns TRUE for valid gene symbols", {
+  expect_true(check_is_valid_feature(c("abc", "gene1")))
+})
+
+test_that("check_is_valid_feature returns TRUE for valid UniProt IDs", {
+  expect_true(check_is_valid_feature(c("P12345", "Q8N158")))
+})
+
+test_that("check_is_valid_feature returns TRUE for valid CHEBI IDs", {
+  expect_true(check_is_valid_feature(c("CHEBI:12345", "CHEBI:67890")))
+})
+
+test_that("check_is_valid_feature returns TRUE for valid InChI strings", {
+  expect_true(check_is_valid_feature("ABCDEFGHIJKLMN-ABCDEFGHIJ-K"))
+})
+
+test_that("check_is_valid_feature returns TRUE for valid KEGG IDs", {
+  expect_true(check_is_valid_feature(c("C00031", "C00022")))
+})
+
+# test_that("check_is_valid_feature returns FALSE and warns for invalid IDs", {
+#   expect_warning(result <- check_is_valid_feature(c("INVALID", "12345")))
+#   expect_false(result)
+# })
+
+# test_that("check_is_valid_feature returns FALSE and warns if none are valid", {
+#   expect_warning(result <- check_is_valid_feature(c("INVALID", "NOTACHEBI")))
+#   expect_false(result)
+#   expect_warning(result2 <- check_is_valid_feature(c("NOTUNIPROT", "NOTHING")))
+#   expect_false(result2)
+# })
+
+# test_that("check_is_valid_feature returns FALSE and warns if none match", {
+#   expect_warning(result <- check_is_valid_feature(c("NOTHING", "123456")))
+#   expect_false(result)
+# })

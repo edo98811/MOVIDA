@@ -16,7 +16,7 @@ test_that("MovidaModel object is properly initialized", {
   expect_true(R6::is.R6(model))
 })
 
-test_that("MovidaModel object is properly initialized", {
-  model_se <<- expect_warning(MovidaModel$new(movida_list_se))
+test_that("MovidaModel object with se is properly initialized", {
+  expect_warning(model_se <<-MovidaModel$new(movida_list_se))
   expect_true(R6::is.R6(model_se))
 })
