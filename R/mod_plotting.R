@@ -1,6 +1,15 @@
 # DRAFT -------
 
 # UI function for the module
+#' module_plotting_lineplot UI Function
+#'
+#' @description A shiny Module.
+#'
+#' @param id,input,output,session Internal parameters for {shiny}.
+#'
+#' @noRd 
+#'
+#' @importFrom shiny NS tagList 
 mod_plotting_ui <- function(id) {
   ns <- NS(id) # Namespace for the module
   page_fillable(
@@ -12,11 +21,17 @@ mod_plotting_ui <- function(id) {
     )
   )
 }
+
+    
+#' module_plotting_lineplot Server Functions
+#'
+#' @noRd 
 mod_plotting_server <- function(id, dashboard_elements, bookmarked_elements, movida_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     sources <- movida_data$get_sources()
+
     #### UI FOR LINE PLOT ####
     output$line_plot <- renderUI({
       layout_column_wrap(

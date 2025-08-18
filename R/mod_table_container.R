@@ -1,4 +1,13 @@
 #  UI function
+#' module_plotting_lineplot UI Function
+#'
+#' @description A shiny Module.
+#'
+#' @param id,input,output,session Internal parameters for {shiny}.
+#'
+#' @noRd 
+#'
+#' @importFrom shiny NS tagList 
 mod_table_ui <- function(id, dashboard = FALSE, show_export_data_btn = FALSE, show_export_plot_btn = FALSE) {
   ns <- NS(id)
 
@@ -15,7 +24,10 @@ mod_table_ui <- function(id, dashboard = FALSE, show_export_data_btn = FALSE, sh
   )
 }
 
-# Server function
+    
+#' module_plotting_lineplot Server Functions
+#'
+#' @noRd 
 mod_table_server <- function(id, main_table_function, selected_row, table_type = "default") {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns

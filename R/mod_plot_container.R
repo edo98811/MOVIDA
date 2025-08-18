@@ -1,7 +1,15 @@
 # UI function
 
 
-
+#' module_plotting_lineplot UI Function
+#'
+#' @description A shiny Module.
+#'
+#' @param id,input,output,session Internal parameters for {shiny}.
+#'
+#' @noRd 
+#'
+#' @importFrom shiny NS tagList 
 mod_plot_ui <- function(id, title = "Pinned Plot", show_export_data_btn = TRUE, show_export_plot_btn = TRUE, show_export_code_btn = TRUE) {
   ns <- NS(id)
 
@@ -47,9 +55,10 @@ mod_plot_ui <- function(id, title = "Pinned Plot", show_export_data_btn = TRUE, 
   # )
 }
 
-# Server function
-# requirememtns of this function, the id is a static valuet a is only related to the plot. plot id is a reacrive value. so that we can change it and change the conetent. the main plotting function is a function that contains a reactive value that is evaluated in the renderUI function.
-# the problem that i see is:
+    
+#' module_plotting_lineplot Server Functions
+#'
+#' @noRd 
 mod_plot_server <- function(id, plot_id, main_plotting_function, dashboard_elements = NULL) {
   moduleServer(id, function(input, output, session) {
     # if (is.function(plot_id)) {
@@ -138,7 +147,10 @@ mod_plot_server <- function(id, plot_id, main_plotting_function, dashboard_eleme
           dashboard_elements$elements[[plot_key]] <- NULL
         } else {
           # Add plot
-          dashboard_elements$elements[[plot_key]] <- main_plotting_function()
+          if (is.function(main_plotting_function)) {
+            # Perche e necessario questo if? forse perche quando premo un pulsante non sto triggerando la funzione solo nel module che voglio io ma anche da qualche altra parte? molto strano che funzioni senza intoppi!
+            dashboard_elements$elements[[plot_key]] <- main_plotting_function
+          }
         }
       },
       ignoreInit = TRUE

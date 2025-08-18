@@ -1,3 +1,12 @@
+#' module_plotting_lineplot UI Function
+#'
+#' @description A shiny Module.
+#'
+#' @param id,input,output,session Internal parameters for {shiny}.
+#'
+#' @noRd 
+#'
+#' @importFrom shiny NS tagList 
 mod_sidebar_overview_ui <- function(id) {
   ns <- NS(id)
   # here i want a navset pill with the three type of omics, i want to see as many plots as there are related features for each type
@@ -8,9 +17,15 @@ mod_sidebar_overview_ui <- function(id) {
     uiOutput(ns("sidebar_ui_plots")),
   )
 }
+
+    
+#' module_plotting_lineplot Server Functions
+#'
+#' @noRd 
+#' 
 mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_source, movida_data, max_plots = 20) {
   moduleServer(id, function(input, output, session) {
-     ns <- session$ns
+    ns <- session$ns
     sources <- movida_data$get_sources()
 
     # Store current features per source
@@ -73,7 +88,11 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
               ns(paste0("group_column_", source)),
               "Group by:",
               choices = movida_data$get_metadata_columns(source),
-              selected = movida_data$get_metadata_columns(source)[[1]]
+              selected = {
+                cols <- movida_data$get_metadata_columns(source)
+                group_col <- cols[grepl("group", cols, ignore.case = TRUE)]
+                if (length(group_col) > 0) group_col[[1]] else cols[[1]]
+              }
             ),
             selectInput(
               ns(paste0("subset_group_", source)),
@@ -122,20 +141,23 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
     # Initialize all plot modules
     lapply(names(sources), function(source) {
       # Update subset group choices
-      observeEvent(        
+      observeEvent(
+        #  I update the select input when one of the two things happens: the selected variable changes or the source changes
         {
           input[[paste0("group_column_", source)]]
           selected_row_source$selected
-        }, {
-        selected_group_col <- input[[paste0("group_column_", source)]]
-        req(selected_group_col)
-        updateSelectInput(
-          session,
-          paste0("subset_group_", source),
-          choices = movida_data$get_metadata(source)[[selected_group_col]],
-            selected = head(movida_data$get_metadata(source)[[selected_group_col]], 5)
-        )
-      })
+        },
+        {
+          selected_group_col <- input[[paste0("group_column_", source)]]
+          req(selected_group_col)
+          updateSelectInput(
+            session,
+            paste0("subset_group_", source),
+            choices = movida_data$get_metadata(source)[[selected_group_col]],
+            selected = head(movida_data$get_metadata(source)[[selected_group_col]], 6)
+          )
+        }
+      )
 
       lapply(seq_len(max_plots), function(i) {
         plot_id <- reactive({
@@ -144,7 +166,7 @@ mod_sidebar_overview_server <- function(id, dashboard_elements, selected_row_sou
           if (is.null(features) || length(features) < i || is.null(features[[i]])) {
             return(NULL)
           }
-          paste0("source_", source, ";feature_", features[[i]])
+          paste0("source_", source, ";feature_", features[[i]]) # , ";group_", input[[paste0("subset_group_", source)]], ";column_", input[[paste0("group_column_", source)]])
         })
 
         # The function with the ractive values inside is passed to the plotting

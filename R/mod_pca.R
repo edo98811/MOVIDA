@@ -7,7 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_kegg_ui <- function(id) {
+mod_module_plotting_lineplot_ui <- function(id) {
   ns <- NS(id)
   tagList(
  
@@ -17,7 +17,7 @@ mod_kegg_ui <- function(id) {
 #' module_plotting_lineplot Server Functions
 #'
 #' @noRd 
-mod_kegg_server <- function(id){
+mod_module_plotting_lineplot_server <- function(id){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
  

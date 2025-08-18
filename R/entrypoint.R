@@ -36,3 +36,37 @@ MovidaApp <- function(movida_list) {
   shinyApp(ui = ui, server = server_wrapper)
   # shiny::runApp(list(ui = ui, server = server_wrapper), display.mode="showcase")
 }
+
+# MovidaApp <- function(...) {
+#   args <- list(...)
+#   movida_list <- list()
+ 
+#   # Check valid arguments.
+#   for (arg_name in names(args)) {
+#     arg_value <- args[[arg_name]]
+#     if (
+#       is.character(arg_name) &&
+#       inherits(arg_value, "SummarizedExperiment") &&
+#       check_valid_feature_type(arg_value)
+#     ) {
+#       movida_list[[arg_name]] <- arg_value
+#     } else {
+#       message("arg: ", arg_name, " not included in movida list as it does not respect the expected format")
+#     }
+#   }
+
+#   movida_data <- MovidaModel$new(movida_list)
+#   movida_data$load_relationships("relationships/")
+#   # set_movida_data(movida_data)
+#   # data_store <- new.env()
+#   # data_store$movida_data <- readRDS("data/movida_data.rds")
+
+#   # initialize_movida_data(movida_list)
+#   # Wrap server to inject movida_data as argument
+#   server_wrapper <- function(input, output, session) {
+#     server(input, output, session, movida_data = movida_data)
+#   }
+
+#   shinyApp(ui = ui, server = server_wrapper)
+#   # shiny::runApp(list(ui = ui, server = server_wrapper), display.mode="showcase")
+# }
