@@ -1,5 +1,7 @@
-
 # UI function
+
+
+
 mod_plot_ui <- function(id, title = "Pinned Plot", show_export_data_btn = TRUE, show_export_plot_btn = TRUE, show_export_code_btn = TRUE) {
   ns <- NS(id)
 
@@ -46,13 +48,46 @@ mod_plot_ui <- function(id, title = "Pinned Plot", show_export_data_btn = TRUE, 
 }
 
 # Server function
+# requirememtns of this function, the id is a static valuet a is only related to the plot. plot id is a reacrive value. so that we can change it and change the conetent. the main plotting function is a function that contains a reactive value that is evaluated in the renderUI function.
+# the problem that i see is:
 mod_plot_server <- function(id, plot_id, main_plotting_function, dashboard_elements = NULL) {
   moduleServer(id, function(input, output, session) {
-    message("Module started for: ", plot_id)
+    # if (is.function(plot_id)) {
+    #   message("Module started for: ", plot_id())
+    # } else {
+    #   message("Module started for: ", plot_id)
+    # }
+
 
     # Render the main plot using the provided plotting function
     output$plot <- renderPlot({
-      main_plotting_function()
+      tryCatch(
+        {
+          # If main_plotting_function is a function, call it
+          if (is.function(main_plotting_function)) {
+            plot_obj <- main_plotting_function()
+          } else {
+            # Otherwise assume it's already a plot object
+            plot_obj <- main_plotting_function
+          }
+
+          # Check if plot_obj is NULL
+          if (is.null(plot_obj)) {
+            # Return an empty plot or placeholder
+            plot(1, 1, type = "n", xlab = "", ylab = "", main = "No data available")
+            text(1, 1, "No data to display", cex = 1.2)
+            return()
+          }
+
+          # Return the plot object to render
+          plot_obj
+        },
+        error = function(e) {
+          # Error handling - show error message as a plot
+          plot(1, 1, type = "n", xlab = "", ylab = "", main = "Error")
+          text(1, 1, paste("Error:", e$message), cex = 0.8)
+        }
+      )
     })
 
     # Render UI for dashboard buttons based on whether the plot is in the dashboard
@@ -65,36 +100,50 @@ mod_plot_server <- function(id, plot_id, main_plotting_function, dashboard_eleme
     #     actionButton(session$ns("btn_dashboard"), "Add to Dashboard")
     #   }
     # })
+    # output$dashboard_buttons_small <- renderUI({
+    #   if (!is.null(dashboard_elements) && !is.null(dashboard_elements$elements[[plot_id_value(plot_id)]])) {
+    #     # If the plot is already in the dashboard, show a "Remove from Dashboard" button
+    #     div(
+    #       actionButton(session$ns("btn_remove_dashboard"), "-", class = "btn-outline-danger btn-sm", style = "width: 40px;"),
+    #       style = "padding-bottom: 7px;"
+    #     )
+    #   } else {
+    #     # Otherwise, show an "Add to Dashboard" button
+    #     div(
+    #       actionButton(session$ns("btn_add_dashboard"), "+", class = "btn-outline-success btn-sm", style = "width: 40px;"),
+    #       style = "padding-bottom: 7px;"
+    #     )
+    #   }
+    # })
     output$dashboard_buttons_small <- renderUI({
-      if (!is.null(dashboard_elements) && !is.null(dashboard_elements$elements[[plot_id]])) {
-        # If the plot is already in the dashboard, show a "Remove from Dashboard" button
-        div(
-          actionButton(session$ns("btn_remove_dashboard"), "-", class = "btn-outline-danger btn-sm", style = "width: 40px;"),
-          style = "padding-bottom: 7px;"
-        )
-      } else {
-        # Otherwise, show an "Add to Dashboard" button
-        div(
-          actionButton(session$ns("btn_add_dashboard"), "+", class = "btn-outline-success btn-sm", style = "width: 40px;"),
-          style = "padding-bottom: 7px;"
-        )
-      }
+      plot_key <- plot_id_value(plot_id)
+      in_dash <- !is.null(dashboard_elements$elements[[plot_key]])
+
+      label <- if (in_dash) "-" else "+"
+      cls <- if (in_dash) "btn-outline-danger btn-sm" else "btn-outline-success btn-sm"
+
+      div(
+        actionButton(session$ns("btn_dashboard_toggle"), label, class = cls, style = "width: 40px;"),
+        style = "padding-bottom: 7px;"
+      )
     })
 
-    # Add the plot to the dashboard when the "Add to Dashboard" button is clicked
-    observeEvent(input$btn_add_dashboard, {
-      req(main_plotting_function)
-      if (!is.null(dashboard_elements)) {
-        dashboard_elements$elements[[plot_id]] <- main_plotting_function
-      }
-    })
+    observeEvent(input$btn_dashboard_toggle,
+      {
+        plot_key <- isolate(plot_id_value(plot_id))
+        in_dash <- !is.null(isolate(dashboard_elements$elements[[plot_key]]))
 
+        if (in_dash) {
+          # Remove plot
+          dashboard_elements$elements[[plot_key]] <- NULL
+        } else {
+          # Add plot
+          dashboard_elements$elements[[plot_key]] <- main_plotting_function()
+        }
+      },
+      ignoreInit = TRUE
+    )
     # Remove the plot from the dashboard when the "Remove from Dashboard" button is clicked
-    observeEvent(input$btn_remove_dashboard, {
-      req(dashboard_elements)
-      dashboard_elements$elements[[plot_id]] <- NULL
-      dashboard_elements$elements <- dashboard_elements$elements[!sapply(dashboard_elements$elements, is.null)]
-    })
 
     # Provide a download handler for exporting data as a CSV file
     output$btn_export_data <- downloadHandler(
@@ -145,7 +194,7 @@ mod_plot_server <- function(id, plot_id, main_plotting_function, dashboard_eleme
       content = function(file) {
         req(main_plotting_function)
         # Generate the R code for the plotting function
-        func_text <- export_code(main_plotting_function, plot_id)
+        func_text <- export_code(main_plotting_function, plot_id_value(plot_id))
         writeLines(func_text, file)
       }
     )
@@ -158,3 +207,5 @@ mod_plot_server <- function(id, plot_id, main_plotting_function, dashboard_eleme
   # # Create a hash
   # hash <- digest(func_text, algo = "sha256")
 }
+
+plot_id_value <- function(plot_id) if (shiny::is.reactive(plot_id)) plot_id() else plot_id
