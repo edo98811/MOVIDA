@@ -2,6 +2,12 @@
 #  tests in r: https://r-pkgs.org/testing-basics.html#initial-setup
 
 library(testthat)
+# entrypoint <- "R/run_app.R"
+
+# app <- AppDriver$new(
+#   app_expr =  run_app_test(),
+#   name = "golem_app_test"
+# )
 
 # Helper function to create fake row names based on type
 generate_row_names <- function(type, n, name) {
@@ -21,16 +27,17 @@ create_fake_se <- function(nrow, ncol, name, rowname_type = "symbol") {
   assay <- matrix(assay, nrow = nrow, ncol = ncol)
   row_names <- generate_row_names(rowname_type, nrow, name)
   rowData <- S4Vectors::DataFrame(gene_id = row_names)
-  rownames(rowData) <- row_names  # Set gene_id as rownames
+  rownames(rowData) <- row_names # Set gene_id as rownames
   # Add a fake group column to colData
   sample_names <- paste0(name, "_sample", seq_len(ncol))
   group <- rep(c("A", "B"), length.out = ncol)
   colData <- S4Vectors::DataFrame(
     sample_id = sample_names,
     group = group,
-    batch = c(rep(1, ncol - 1), 2)  # Add a batch column
+    batch = c(rep(1, ncol - 1), 2), # Add a batch column
+    info = rep(NA, ncol) # Add an NA column to test
   )
-  rownames(colData) <- sample_names  # Set sample_id as rownames
+  rownames(colData) <- sample_names # Set sample_id as rownames
   SummarizedExperiment::SummarizedExperiment(assays = list(counts = assay), rowData = rowData, colData = colData)
 }
 
@@ -41,7 +48,6 @@ se_metabo <- create_fake_se(12, 6, "SE3", rowname_type = "chebiid")
 
 # Create fake differential expression (DE) results
 create_fake_de_results <- function(se, name, return_type = c("DESeqResults", "MArrayLM")) {
-
   return_type <- match.arg(return_type)
   n <- SummarizedExperiment::nrow(se)
   res_df <- data.frame(
@@ -57,30 +63,30 @@ create_fake_de_results <- function(se, name, return_type = c("DESeqResults", "MA
   if (return_type == "DESeqResults") {
     return(DESeq2::DESeqResults(res_df))
   } else if (return_type == "MArrayLM") {
- n <- nrow(res_df)
-  fit <- list()
-  fit$coefficients <- matrix(res_df$log2FoldChange, nrow = n, ncol = 1)
-  rownames(fit$coefficients) <- rownames(res_df)
-  colnames(fit$coefficients) <- "logFC"
-  
-  fit$stdev.unscaled <- matrix(res_df$lfcSE, nrow = n, ncol = 1)
-  rownames(fit$stdev.unscaled) <- rownames(res_df)
-  colnames(fit$stdev.unscaled) <- "logFC"
-  
-  fit$sigma <- rep(1, n)
-  fit$df.residual <- rep(10, n)
-  
-  fit$p.value <- matrix(res_df$pvalue, nrow = n, ncol = 1)
-  rownames(fit$p.value) <- rownames(res_df)
-  colnames(fit$p.value) <- "logFC"
-  
-  fit$design <- matrix(1, nrow = n, ncol = 1)
-  rownames(fit$design) <- rownames(res_df)
-  colnames(fit$design) <- "logFC"
-  
-  class(fit) <- "MArrayLM"
-  fit <- limma::eBayes(fit)
-  return(fit)
+    n <- nrow(res_df)
+    fit <- list()
+    fit$coefficients <- matrix(res_df$log2FoldChange, nrow = n, ncol = 1)
+    rownames(fit$coefficients) <- rownames(res_df)
+    colnames(fit$coefficients) <- "logFC"
+
+    fit$stdev.unscaled <- matrix(res_df$lfcSE, nrow = n, ncol = 1)
+    rownames(fit$stdev.unscaled) <- rownames(res_df)
+    colnames(fit$stdev.unscaled) <- "logFC"
+
+    fit$sigma <- rep(1, n)
+    fit$df.residual <- rep(10, n)
+
+    fit$p.value <- matrix(res_df$pvalue, nrow = n, ncol = 1)
+    rownames(fit$p.value) <- rownames(res_df)
+    colnames(fit$p.value) <- "logFC"
+
+    fit$design <- matrix(1, nrow = n, ncol = 1)
+    rownames(fit$design) <- rownames(res_df)
+    colnames(fit$design) <- "logFC"
+
+    class(fit) <- "MArrayLM"
+    fit <- limma::eBayes(fit)
+    return(fit)
   }
 }
 
@@ -183,7 +189,31 @@ movida_list_se <- list(
 #   metadata = shared_metadata
 # )
 
-model <-  MovidaModel$new(movida_list)
-model_se <-  MovidaModel$new(movida_list_se)
+model <- MovidaModel$new(movida_list)
+model_se <- MovidaModel$new(movida_list_se)
 # model_shared <-  MovidaModel$new(movida_list_shared)
 message("Setup-tests.R was sourced")
+
+
+# # Set up the environment for testing
+# Sys.setenv(CHROMOTE_CHROME = "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser")
+
+# # tests/testthat/setup-tests-movida.R
+# library(shinytest2)
+# library(MOVIDA)
+# options(shiny.testmode = TRUE)
+
+# movida_data <- list(a = 1) # example
+# app_expr <- function() {
+#   MOVIDA::run_app(movida_data = movida_data)
+# }
+# app <- shinytest2::AppDriver$new(
+#   app_expr = app_expr,
+#   name = "golem_app_test",
+#   shiny_args = list(launch.browser = FALSE),
+#   load_timeout = 20000
+# )
+
+# teardown({
+#   app$stop()
+# })

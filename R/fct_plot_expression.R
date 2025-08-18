@@ -26,6 +26,17 @@
 plot_expression_movida <- function(entity, se_object, export_data = FALSE, data_type = "unknown", group_var = "group") {
   # Use count matrix from SummarizedExperiment if not provided
 
+  # Check if entity exists in count matrix
+  if (is.null(se_object)) {
+    return(ggplot() +
+      annotate("text",
+        x = 0.5, y = 0.5,
+        label = paste0("Select a subset"),
+        size = 6, hjust = 0.5, vjust = 0.5
+      ) +
+      theme_void())
+  }
+
   count_matrix <- assays(se_object)$counts
 
   # Check if entity exists in count matrix

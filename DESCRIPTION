@@ -1,19 +1,13 @@
-Package: MovidaApp
-Type: Package
-Title: Container for the Movida App
-Version: 0.1.0
-Authors@R: c(
-    person(
-      "Edoardo", "Filippi",
-      email = "edoardo.filippi@uni-mainz.de",
-      role = c("aut", "cre")
-    )
-  )
-Description: Application to explore multiomics datasets.
-License: MIT
-Encoding: UTF-8
-LazyData: true
-Imports:
+Package: MOVIDA
+Title: MultiOmics Visualization, Integration and Downstream Analyses
+Version: 0.0.0.9000
+Authors@R: 
+    person("Edoardo", "Filippi", , "edoardo.filippi@uni-mainz.de", role = c("aut", "cre"))
+Description: Simplify the analysis of multiomics datasets
+License: MIT + file LICENSE
+Imports: 
+    config,
+    golem,
     shiny,
     RColorBrewer,
     grDevices,
@@ -33,8 +27,33 @@ Imports:
     ggforce,
     ggrepel,
     methods
+Encoding: UTF-8
+LazyData: true
 RoxygenNote: 7.3.2
-Roxygen: list(markdown = TRUE, roclets = c("rd", "namespace"))
+URL: https://github.com/edo98811/MOVIDA_golem.git
+BugReports: https://github.com/edo98811/MOVIDA_golem.git/issues
 Suggests: 
+    spelling,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Language: en-US
+Collate:
+  fct_helpers_app_server.R
+  fct_other_utils.R
+  fct_plot_expression_line.R
+  fct_plot_expression.R
+  fct_plot_heatmap.R
+  fct_utils_export_functions.R
+  fct_utils_find_relationships.R
+  fct_utils_validate_input.R
+  data_backend.R
+  mod_dashboard.R
+  mod_kegg.R
+  mod_overview.R
+  mod_plot_container.R
+  mod_plotting.R
+  mod_sidebar_overview.R
+  mod_table_container.R
+  app_server.R
+  app_ui.R
+  entrypoint.R

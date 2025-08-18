@@ -18,8 +18,13 @@ test_that("get_features_all", {
 })
 
 test_that("get_metadata_columns", {
+  # add test to ckec if metadata columsn are filtered correctly
   cols <- model$get_metadata_columns("proteomics")
   expect_true(is.character(cols))
+  expect_true("sample_id" %in% cols) # Ensure sample_id is included
+  expect_true("group" %in% cols) # Ensure group is included
+  expect_true("batch" %in% cols) # Ensure batch is included
+  expect_false("info" %in% cols) # Ensure NA column is excluded
 })
 
 test_that("get_metadata", {
@@ -30,14 +35,13 @@ test_that("get_metadata", {
 })
 
 test_that("get_dde_object", {
-
   to_test <- c("proteomics", "transcriptomics", "metabolomics")
   for (source in to_test) {
     dde <- model$get_dde_object_exposed(source)
     expect_s4_class(dde, "DeeDeeExperiment")
     expect_true(all(rownames(dde) %in% model$get_features_all(source)))
     expect_true(all(colnames(dde) %in% model$get_metadata(source)$sample_id))
-  } 
+  }
   expect_error(model$get_dde_object_exposed("nonexistent_source"), "get_dde_object: Invalid source type.")
 })
 

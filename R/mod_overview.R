@@ -2,14 +2,6 @@
 mod_overview_ui <- function(id) {
   ns <- NS(id) # Namespace for the module
 
-  contrast_selector_ui <- function(ns) {
-    div(
-      style = "display: flex; align-items: center; padding: 10px 10px 0 10px;",
-      div(style = "margin-right: 10px;", "Select Contrast:"),
-      div(style = "flex-grow: 1;", selectInput(ns("contrast_selector"), NULL, choices = NULL, width = "100%"))
-    )
-  }
-
   navset_pill(
     nav_panel(
       title = "Overview",
@@ -18,11 +10,11 @@ mod_overview_ui <- function(id) {
     ),
     nav_panel(
       title = "Differential Expression",
-      uiOutput(ns("DEResults")),
+      uiOutput(ns("DEResults"))
     ),
     nav_panel(
       title = "Enrichment Results",
-      uiOutput(ns("EnrichmentResults")),
+      uiOutput(ns("EnrichmentResults"))
     )
   )
 }
@@ -36,29 +28,48 @@ mod_overview_ui <- function(id) {
 mod_overview_server <- function(id, dashboard_elements, row_to_select) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    contrasts <- movida_data$get_contrasts()
+      ns <- session$ns
 
-    # Update the contrast selector with available contrasts
-    if (length(contrasts) > 0) {
-      updateSelectInput(session, "contrast_selector",
-        choices = contrasts,
-        selected = contrasts[1]
+    contrast_selector_ui <- function(ns, choices, name) {
+      div(
+        style = "display: flex; align-items: center; padding: 10px 10px 0 10px;",
+        div(style = "margin-right: 10px;", "Select Contrast:"),
+        div(
+          style = "flex-grow: 1;",
+          selectInput(ns(paste0("contrast_selector_", name)), NULL, choices = choices, width = "100%")
+        )
       )
     }
+    
+    # Reactive values to store
+    contrast_de <- reactive({
+      req(input$contrast_selector_de)
+      input$contrast_selector_de
+    })
 
-    contrast <- reactive({
-      req(input$contrast_selector)
-      input$contrast_selector
+    contrast_enrichment <- reactive({
+      req(input$contrast_selector_enrichment)
+      input$contrast_selector_enrichment
+    })
+
+    #  To have the two selectors syncornnized
+    observeEvent(input$contrast_selector_de, ignoreInit = TRUE, {
+      if (!identical(input$contrast_selector_enrichment, input$contrast_selector_de)) {
+        updateSelectInput(session, "contrast_selector_enrichment",
+          selected = input$contrast_selector_de
+        )
+      }
+    })
+
+    observeEvent(input$contrast_selector_enrichment, ignoreInit = TRUE, {
+      if (!identical(input$contrast_selector_de, input$contrast_selector_enrichment)) {
+        updateSelectInput(session, "contrast_selector_de",
+          selected = input$contrast_selector_enrichment
+        )
+      }
     })
 
     is_filtering <- reactiveVal(FALSE)
-
-    # Update the contrast in the row_to_select reactive value
-    observeEvent(contrast(), {
-      row_to_select$contrast <- contrast()
-      row_to_select$selected <- NULL
-      row_to_select$source <- NULL
-    })
 
     # Function to filter the tables if needed
     output$is_filtering_button <- renderUI({
@@ -79,46 +90,11 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select) {
     sources <- movida_data$get_sources()
 
     # Loop through sources to create server logic for DE and enrichment tables
-    observeEvent(contrast(), {
-      lapply(sources, function(source) {
-        # Create a reactive function for the main table data
-        data_function <- reactive({
-          tryCatch(
-            {
-              get_tables(source)
-            },
-            error = function(e) {
-              warning(paste("Error in main_table_function:", e$message))
-              return(NULL)
-            }
-          )
-        })
-
-        mod_table_server(
-          id = paste0("feature_", source),
-          main_table_function = data_function,
-          selected_row = row_to_select,
-          table_type = "minimal"
-        )
-
-        mod_table_server(
-          id = paste0("de_", source),
-          main_table_function = reactive({
-            movida_data$getDEA(source, contrast(), FDRpvalue = NULL, FDRadj = NULL)
-          }),
-          selected_row = row_to_select
-        )
-
-        mod_table_server(
-          id = paste0("enrich_", source),
-          main_table_function = reactive({
-            movida_data$getFEA(source, contrast())
-          }),
-          selected_row = row_to_select
-        )
-      })
+    observeEvent(contrast_de(), {
+      row_to_select$contrast <- contrast_de()
+      row_to_select$selected <- NULL
+      row_to_select$source <- NULL
     })
-
 
     get_tables <- function(source) {
       if (is_filtering()) {
@@ -143,9 +119,46 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select) {
       return(data)
     }
 
+    lapply(names(sources), function(source) {
+      data_function <- reactive({
+        tryCatch(
+          {
+            get_tables(source)
+          },
+          error = function(e) {
+            warning(paste("Error in main_table_function:", e$message))
+            return(NULL)
+          }
+        )
+      })
+
+      mod_table_server(
+        id = paste0("de_", source),
+        main_table_function = reactive({
+          movida_data$getDEA(source, contrast_de(), FDRpvalue = NULL, FDRadj = NULL)
+        }),
+        selected_row = row_to_select
+      )
+
+      mod_table_server(
+        id = paste0("enrich_", source),
+        main_table_function = reactive({
+          movida_data$getFEA(source, contrast_enrichment())
+        }),
+        selected_row = row_to_select
+      )
+
+      mod_table_server(
+        id = paste0("feature_", source),
+        main_table_function = data_function,
+        selected_row = row_to_select,
+        table_type = "minimal"
+      )
+    })
+
     output$EnrichmentResults <- renderUI({
       div(
-        contrast_selector_ui(ns),
+        contrast_selector_ui(ns, movida_data$get_contrasts(), "enrichment"),
         br(),
         div(
           lapply(names(sources), function(source) {
@@ -158,9 +171,10 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select) {
         )
       )
     })
+
     output$DEResults <- renderUI({
       div(
-        contrast_selector_ui(ns),
+        contrast_selector_ui(ns, movida_data$get_contrasts(), "de"),
         br(),
         div(
           lapply(names(sources), function(source) {
@@ -173,9 +187,10 @@ mod_overview_server <- function(id, dashboard_elements, row_to_select) {
         )
       )
     })
+
     output$EntitiesOverview <- renderUI({
       do.call(layout_column_wrap, c(
-        list(width = 1 / 3, heights_equal = "row"),
+        list(width = 1 / length(sources), heights_equal = "row"),
         lapply(names(sources), function(source) {
           div(
             br(),

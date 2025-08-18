@@ -1,7 +1,7 @@
 test_that("get_pathwayfeatures", {
   
   pathway <- rownames(model$getFEA("proteomics", "A_vs_B"))[[1]]
-  result <- model$get_pathwayfeatures(pathway, "A_vs_B", "proteomics")
+  result <- model$get_pathway_features(pathway, "A_vs_B", "proteomics")
 
   expect_type(result, "character")
   expect_true(is.vector(result))
@@ -10,7 +10,7 @@ test_that("get_pathwayfeatures", {
 test_that("get_pathwayfeatures_not_existent", {
 
   pathway <- "nonexistent_pathway"
-  suppressWarnings(result <- model$get_pathwayfeatures(pathway, "C_vs_B", "proteomics"))
+  suppressWarnings(result <- model$get_pathway_features(pathway, "C_vs_B", "proteomics"))
 
   expect_true(is.null(result))
 })

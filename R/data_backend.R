@@ -180,12 +180,10 @@ MovidaModel <- R6Class("MovidaModel",
     #' @return A character vector of unique contrast names found across the specified elements of `movida_list`.
     get_contrasts = function() {
       return(
-        unique(unlist(
-          list(
-            DEANames_wrapper(private$dde_prot),
-            DEANames_wrapper(private$dde_trans),
-            DEANames_wrapper(private$dde_metabo)
-          )
+        unique(c(
+          suppressWarnings(DEANames_wrapper(private$dde_metabo)),
+          suppressWarnings(DEANames_wrapper(private$dde_prot)),
+          suppressWarnings(DEANames_wrapper(private$dde_trans))
         ))
       )
     },
@@ -365,47 +363,51 @@ MovidaModel <- R6Class("MovidaModel",
     #' @param target Target omics type: "proteomics", "transcriptomics", or "metabolomics".
     #'
     #' @return Returns related features in the target omics type.
-    get_related_features = function(feature, target) {
+    get_related_features = function(feature, source, target) {
       if (!is.character(c(feature))) {
-        warning("Argument 'features' must be a vector of strings.")
+        message("Argument 'features' must be a vector of strings.")
         return(NULL)
       }
 
       # Validate that the features are of a recognized type (Ensembl, inchi, or UniProt)
-      if (!suppressWarnings(check_ensembl(c(feature))) && !suppressWarnings(check_inchi(c(feature))) && !suppressWarnings(check_uniprot(c(feature)))) {
-        warning("Error:get_related_features, features must be of type Ensembl, inchi, or UniProt.")
+      if (!suppressWarnings(check_is_valid_feature(c(feature)))) {
+        message("Error:get_related_features, features must be of type Ensembl, inchi, or UniProt.")
         return(NULL)
       }
 
       # Check if 'target' is a single string
       if (!is.character(target) || length(target) != 1) {
-        warning("Argument 'target' must be a single string.")
+        message("Argument 'target' must be a single string.")
         return(NULL)
       }
 
       # Return the related features based on the target type
-      if (suppressWarnings(check_ensembl(c(feature)))) {
-        if (target == "proteomics") {
+      # Allow 'source' and 'target' to be matched by partial string (e.g., if source contains "transcript", etc.)
+      src <- tolower(source)
+      tgt <- tolower(target)
+
+      if (grepl("transcript", src)) {
+        if (grepl("proteom", tgt)) {
           return(private$uniprot_to_ensembl[private$uniprot_to_ensembl$ENSEMBL %in% feature, , drop = FALSE]$UNIPROT)
-        } else if (target == "transcriptomics") {
+        } else if (grepl("transcript", tgt)) {
           return(c(feature)) # Ensembl to Ensembl is a direct match
-        } else if (target == "metabolomics") {
+        } else if (grepl("metabolom", tgt)) {
           return(private$inchi_to_ensembl[private$inchi_to_ensembl$ENSEMBL %in% feature, , drop = FALSE]$INCHIKEY)
         }
-      } else if (suppressWarnings(check_inchi(c(feature)))) {
-        if (target == "proteomics") {
+      } else if (grepl("metabolom", src)) {
+        if (grepl("proteom", tgt)) {
           return(private$inchi_to_uniprot[private$inchi_to_uniprot$INCHIKEY %in% feature, , drop = FALSE]$UNIPROT)
-        } else if (target == "transcriptomics") {
+        } else if (grepl("transcript", tgt)) {
           return(private$inchi_to_ensembl[private$inchi_to_ensembl$INCHIKEY %in% feature, , drop = FALSE]$ENSEMBL)
-        } else if (target == "metabolomics") {
+        } else if (grepl("metabolom", tgt)) {
           return(c(feature)) # inchi to inchi is a direct match
         }
-      } else if (suppressWarnings(check_uniprot(c(feature)))) {
-        if (target == "proteomics") {
+      } else if (grepl("proteom", src)) {
+        if (grepl("proteom", tgt)) {
           return(c(feature)) # UniProt to UniProt is a direct match
-        } else if (target == "transcriptomics") {
+        } else if (grepl("transcript", tgt)) {
           return(private$uniprot_to_ensembl[private$uniprot_to_ensembl$UNIPROT %in% feature, , drop = FALSE]$ENSEMBL)
-        } else if (target == "metabolomics") {
+        } else if (grepl("metabolom", tgt)) {
           return(private$inchi_to_uniprot[private$inchi_to_uniprot$UNIPROT %in% feature, , drop = FALSE]$INCHIKEY)
         }
       }
@@ -414,7 +416,8 @@ MovidaModel <- R6Class("MovidaModel",
     #' @description Get values for specified features.
     #'
     #' @param features Vector of feature identifiers.
-    #' @param source Data source: "proteomics", "transcriptomics", or "metabolomics".
+    #' @param source Data source "proteomics", "transcriptomics", or "metabolomics".
+    #' @param return_se If TRUE, returns the SummarizedExperiment object, otherwise returns assay data.
     #'
     #' @return Returns assay data for the specified features.
     get_values_features = function(features, source, return_se = FALSE) {
@@ -454,10 +457,10 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @param pathway Pathway name.
     #' @param contrast Contrast name.
-    #' @param source Data source: "proteomics", "transcriptomics", or "metabolomics".
+    #' @param source Data source "proteomics", "transcriptomics", or "metabolomics".
     #'
     #' @return Returns a vector of feature identifiers in the pathway.
-    get_pathwayfeatures = function(pathway, contrast, source) {
+    get_pathway_features = function(pathway, contrast, source) {
       # Validate that 'pathway' is a single string
       if (!is.character(pathway) || length(pathway) != 1 || suppressWarnings(check_goterm(pathway))) {
         warning("Argument 'pathway' must be a single string.")
@@ -595,7 +598,20 @@ MovidaModel <- R6Class("MovidaModel",
     #'
     #' @return Returns a vector of metadata column names.
     get_metadata_columns = function(source) {
-      return(colnames(private$get_dde_object(source)))
+
+      colnames <- colnames(private$get_dde_object(source))
+      colData_obj <- colData(private$get_dde_object(source))
+
+      if (is.null(colnames)) {
+        message("Get metadata columns: No metadata columns found for the specified source.")
+        return(NULL)
+      }
+
+
+      valid_cols <- !apply(as.data.frame(colData_obj), 2, function(col) all(is.na(col) | is.null(col)))
+      colnames <- colnames(colData_obj)[valid_cols]
+
+      return(colnames)
     },
 
     #' @description Get metadata for a source.
@@ -606,12 +622,12 @@ MovidaModel <- R6Class("MovidaModel",
     get_metadata = function(source) {
       return(data.frame(colData(private$get_dde_object(source))))
     },
-    #' @description Get metadata for a source.
+    #' @description Get the possible sources
     #'
     #' @param source Data source: "proteomics", "transcriptomics", or "metabolomics".
     #'
-    #' @return Returns metadata for the specified source.
-    get_sources = function(source) {
+    #' @return Returns the sources available in the model.
+    get_sources = function() {
       sources <- c()
       if (!is.null(private$dde_trans)) sources <- c(sources, transcriptomics = "Transcriptomics")
       if (!is.null(private$dde_prot)) sources <- c(sources, proteomics = "Proteomics")
