@@ -17,7 +17,7 @@
 #' @import bslib
 #' @import DT
 #' @export
-MovidaApp <- function(movida_list) {
+MovidaApp <- function(movida_list, recording_test = FALSE) {
   # Initialize the global data model
   # assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
   # assign("movida_data", MovidaModel$new(movida_list), envir = .GlobalEnv)
@@ -33,7 +33,13 @@ MovidaApp <- function(movida_list) {
     server(input, output, session, movida_data = movida_data)
   }
 
-  shinyApp(ui = ui, server = server_wrapper)
+  if (recording_test) {
+    shinytest2::record_test(shinyApp(ui = ui, server = server_wrapper))
+  } else {
+    # Launch the Shiny application
+    shinyApp(ui = ui, server = server_wrapper)
+  }
+
   # shiny::runApp(list(ui = ui, server = server_wrapper), display.mode="showcase")
 }
 

@@ -127,3 +127,15 @@ test_that("check_is_valid_feature returns TRUE for valid KEGG IDs", {
 #   expect_warning(result <- check_is_valid_feature(c("NOTHING", "123456")))
 #   expect_false(result)
 # })
+
+shinytest2::record_test(
+  app = ".",
+  name = NULL,
+  seed = NULL,
+  load_timeout = NULL,
+  shiny_args = list(),
+  test_file = "test-shinytest2.R",
+  allow_no_input_binding = NULL,
+  record_screen_size = TRUE,
+  run_test = TRUE
+)
