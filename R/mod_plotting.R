@@ -1,7 +1,7 @@
 # DRAFT -------
 
 # UI function for the module
-#' module_plotting_lineplot UI Function
+#' module plotting seciton UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -23,7 +23,7 @@ mod_plotting_ui <- function(id) {
 }
 
     
-#' module_plotting_lineplot Server Functions
+#' module plotting section Server Functions
 #'
 #' @noRd 
 mod_plotting_server <- function(id, dashboard_elements, bookmarked_elements, movida_data) {

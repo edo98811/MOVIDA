@@ -1,5 +1,5 @@
 #  UI function
-#' module_plotting_lineplot UI Function
+#' module table container UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -25,7 +25,7 @@ mod_table_ui <- function(id, dashboard = FALSE, show_export_data_btn = FALSE, sh
 }
 
     
-#' module_plotting_lineplot Server Functions
+#' module table container Server Functions
 #'
 #' @noRd 
 mod_table_server <- function(id, main_table_function, selected_row, table_type = "default") {

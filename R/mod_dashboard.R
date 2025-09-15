@@ -1,5 +1,13 @@
 
-# Module for Overview Dashboard with Grid Rendering
+#' module_plotting_lineplot UI Function
+#'
+#' @description A shiny Module.
+#'
+#' @param id,input,output,session Internal parameters for {shiny}.
+#'
+#' @noRd 
+#'
+#' @importFrom shiny NS tagList 
 mod_dashboard_ui <- function(id) {
   ns <- NS(id)
   tagList(
@@ -7,6 +15,10 @@ mod_dashboard_ui <- function(id) {
     uiOutput(ns("grid_ui")) # Dynamic UI for the grid
   )
 }
+
+#' module_plotting_lineplot Server Functions
+#'
+#' @noRd 
 mod_dashboard_server <- function(id, dashboard_elements, movida_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns

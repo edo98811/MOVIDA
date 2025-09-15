@@ -125,26 +125,6 @@ plot_heatmap_movida <- function(se,
     cexCol = 0.8,
     ...
   )
-  # # Generate heatmap
-  # ch <- ComplexHeatmap::Heatmap(
-  #   matrix = heatmap_data,
-  #   column_title = title,
-  #   name = hm_name,
-  #   col = colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100),
-  #   rect_gp = grid::gpar(col = "white", lwd = 0.5),
-  #   cluster_rows = cluster_rows,
-  #   cluster_columns = cluster_columns,
-  #   row_labels = rownames(heatmap_data),
-  #   show_heatmap_legend = FALSE,
-  #   # row_labels = ifelse(use_symbol && !is.null(rowData(se)$SYMBOL),
-  #   #   rowData(se)$SYMBOL[match(rownames(heatmap_data), rownames(rowData(se)))],
-  #   #   rownames(heatmap_data)
-  #   # ),
-  #   ...
-  # )
-
-  # return(ComplexHeatmap::draw(ch, merge_legend = TRUE))
-  # return(ch)
 }
 
 # iDEA -> mettere solo la funzione per creare la heatamp, le altre operazioni nel overview.

@@ -1,4 +1,4 @@
-#' module_plotting_lineplot UI Function
+#' module sidebar overview UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -19,7 +19,7 @@ mod_sidebar_overview_ui <- function(id) {
 }
 
     
-#' module_plotting_lineplot Server Functions
+#' module sidebar overview Server Functions
 #'
 #' @noRd 
 #' 

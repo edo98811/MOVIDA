@@ -1,7 +1,7 @@
 # UI function
 
 
-#' module_plotting_lineplot UI Function
+#' module plot container UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -56,7 +56,7 @@ mod_plot_ui <- function(id, title = "Pinned Plot", show_export_data_btn = TRUE, 
 }
 
     
-#' module_plotting_lineplot Server Functions
+#' module plot container Server Functions
 #'
 #' @noRd 
 mod_plot_server <- function(id, plot_id, main_plotting_function, dashboard_elements = NULL) {

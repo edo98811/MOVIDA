@@ -1,4 +1,4 @@
-#' module_plotting_lineplot UI Function
+#' module overview UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -34,7 +34,7 @@ mod_overview_ui <- function(id) {
 # The lapply loops for generating UI and server logic are efficient but could benefit from caching or memoization if the data sources are large or computationally expensive.
 # Server function for the module
     
-#' module_plotting_lineplot Server Functions
+#' module overview Server Functions
 #'
 #' @noRd 
 mod_overview_server <- function(id, dashboard_elements, row_to_select, movida_data) {

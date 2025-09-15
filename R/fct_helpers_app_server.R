@@ -1,8 +1,4 @@
-# bookmark_helpers.R
 
-# -------------------------------
-# Helper: Return safe value or NA
-# -------------------------------
 safe_value <- function(x) {
   if (is.null(x) || length(x) == 0) {
     return(NA_character_)
@@ -10,9 +6,7 @@ safe_value <- function(x) {
   x
 }
 
-# -------------------------------
-# Check if a feature is bookmarked
-# -------------------------------
+
 is_bookmarked <- function(bookmarks, feature, source, contrast) {
   if (nrow(bookmarks) == 0) return(FALSE)
   
@@ -23,9 +17,7 @@ is_bookmarked <- function(bookmarks, feature, source, contrast) {
   ]) > 0
 }
 
-# -------------------------------
-# Add a bookmark
-# -------------------------------
+
 add_bookmark <- function(bookmarks, feature, source, contrast) {
   new_bookmark <- data.frame(
     feature = feature,
@@ -36,9 +28,6 @@ add_bookmark <- function(bookmarks, feature, source, contrast) {
   rbind(bookmarks, new_bookmark)
 }
 
-# -------------------------------
-# Remove a bookmark
-# -------------------------------
 remove_bookmark <- function(bookmarks, feature, source, contrast) {
   bookmarks[!(
     ((is.na(bookmarks$feature) & is.na(feature)) | bookmarks$feature == feature) &
@@ -47,9 +36,6 @@ remove_bookmark <- function(bookmarks, feature, source, contrast) {
   ), ]
 }
 
-# -------------------------------
-# UI info for bookmark button
-# -------------------------------
 bookmark_ui_info <- function(bookmarks, feature, source, contrast) {
   bookmarked <- is_bookmarked(bookmarks, feature, source, contrast)
   list(

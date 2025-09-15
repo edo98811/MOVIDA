@@ -48,22 +48,6 @@ check_kegg <- function(names_to_check) {
   return(TRUE)
 }
 
-check_is_valid_feature <- function(names_to_check) {
-  if (
-      suppressWarnings(check_ensembl(names_to_check))
-      || suppressWarnings(check_symbol(names_to_check))
-      || suppressWarnings(check_uniprot(names_to_check))
-      || suppressWarnings(check_chebi(names_to_check))
-      || suppressWarnings(check_inchi(names_to_check))
-      || suppressWarnings(check_kegg(names_to_check))
-  ) {
-    return(TRUE)
-  } else {
-    warning("check_is_valid_feature: Invalid source type.")
-    return(FALSE)
-  }
-}
-
 # Function to check if names_to_check are of type InChI
 check_inchi <- function(names_to_check) {
   invalid_names <- names_to_check[!grepl("^[A-Z]{14}-[A-Z]{10}-[A-Z]$", names_to_check)]
@@ -86,6 +70,23 @@ check_symbol <- function(names_to_check) {
   return(TRUE)
 }
 
+# Function to check if names_to_check are of a valid feature type (supported types)
+check_is_valid_feature <- function(names_to_check) {
+  if (
+      suppressWarnings(check_ensembl(names_to_check))
+      || suppressWarnings(check_symbol(names_to_check))
+      || suppressWarnings(check_uniprot(names_to_check))
+      || suppressWarnings(check_chebi(names_to_check))
+      || suppressWarnings(check_inchi(names_to_check))
+      || suppressWarnings(check_kegg(names_to_check))
+  ) {
+    return(TRUE)
+  } else {
+    warning("check_is_valid_feature: Invalid source type.")
+    return(FALSE)
+  }
+}
+
 # Function to check if the organism is either 'hs' or 'Mm'
 check_organism <- function(organism) {
   if (!organism %in% c("Hs", "Mm")) {
@@ -95,6 +96,7 @@ check_organism <- function(organism) {
   return(TRUE)
 }
 
+# If common metadata is provided this checks that it correctly overlaps
 check_metadata <- function(movida_list) {
   # Check that colnames of se_metabo, se_prot, se_trans and rownames of metadata are equal
   cn_metabo <- sort(colnames(movida_list$se_metabo))
@@ -111,36 +113,7 @@ check_metadata <- function(movida_list) {
   }
 }
 
-# # Function to check if movida_list contains the required elements
-# check_movida_list <- function(movida_list) {
-#   # Check if at least one se_ object is not NULL
-#   if (all(sapply(movida_list[c("se_prot", "se_trans", "se_metabo")], is.null))) {
-#     stop("check_movida_list: At least one se_ object must not be NULL.")
-#   }
-
-#   # Check if at least one results_ object is not NULL
-#   # if (all(sapply(movida_list[c("results_prot", "results_trans", "results_metabo")], is.null))) {
-#   #   stop("check_movida_list: At least one results_object must not be NULL.")
-#   # }
-
-#   # Check if se_ objects inherit from SummarizedExperiment
-#   se_objects <- movida_list[c("se_prot", "se_trans", "se_metabo")]
-#   invalid_objects <- names(se_objects)[!sapply(se_objects, function(se) is.null(se) || inherits(se, "SummarizedExperiment"))]
-#   if (length(invalid_objects) > 0) {
-#     stop("check_movida_list: The following se_ objects do not inherit from SummarizedExperiment: ", paste(invalid_objects, collapse = ", "))
-#   }
-
-#   # Check if se_ objects are valid
-#   check_se(se_objects)
-
-#   # Check if organism is valid
-#   if (!check_organism(movida_list$organism)) {
-#     stop("check_movida_list: Invalid organism.")
-#   }
-
-#   return(TRUE)
-# }
-
+# Checks that the inputs are valid objects
 check_movida_list_dde <- function(movida_list) {
   # Check if at least one se_ object is not NULL
   if (all(sapply(movida_list[c("dde_prot", "dde_trans", "dde_metabo")], is.null))) {
@@ -159,15 +132,6 @@ check_movida_list_dde <- function(movida_list) {
     warning("check_movida_list_dde: The following dde_objects are summarized experiment, the app will work but for full functionality use deedee experiments: ", paste(invalid_objects, collapse = ", "))
   }
 
-  # # Check metadata
-  # for (dde in dde_objects) {
-  #   if (!is.null(dde)) {
-  #     if (!"group" %in% colnames(colData(dde))) {
-  #       stop("check_movida_list_dde: colData of the SummarizedExperiment object must contain a 'group' column.")
-  #     }
-  #   }
-  # }
-
   # Check if groups overlap across se_objects
   group_lists <- lapply(dde_objects, function(dde) {
     if (!is.null(dde)) {
@@ -182,56 +146,7 @@ check_movida_list_dde <- function(movida_list) {
   if (length(group_lists) > 1 && length(Reduce(intersect, group_lists)) == 0) {
     warning("check_movida_list_dde: Groups do not overlap at all across dde_objects")
   }
-
-  # # Check if names_to_check are valid for each se_ object
-  # if (!is.null(dde_objects$dde_metabo) && !suppressWarnings(check_chebi(rownames(rowData(dde_objects$dde_metabo)))) && !suppressWarnings(check_inchi(rownames(rowData(dde_objects$dde_metabo))))) {
-  #   stop("check_movida_list_dde: Invalid ChEBI or InChI IDs in rownames(rowData(dde_metabo)).")
-  # }
-  # if (!is.null(dde_objects$dde_prot) && !suppressWarnings(check_uniprot(rownames(rowData(dde_objects$dde_prot))))) {
-  #   stop("check_movida_list_dde: Invalid UniProt IDs in rownames(rowData(dde_prot)).")
-  # }
-  # if (!is.null(dde_objects$dde_trans) && !suppressWarnings(check_ensembl(rownames(rowData(dde_objects$dde_trans)))) && !suppressWarnings(check_symbol(rownames(rowData(dde_objects$dde_trans))))) {
-  #   stop("check_movida_list_dde: Invalid Ensembl IDs or Gene Symbols in rownames(rowData(dde_trans)).")
-  # }
 }
-
-# # Function to check if colData of se objects contains a 'group' column
-# check_se <- function(se_objects) {
-#   for (se in se_objects) {
-#     if (!is.null(se)) {
-#       if (!"group" %in% colnames(colData(se))) {
-#         stop("check_se: colData of the SummarizedExperiment object must contain a 'group' column.")
-#       }
-#     }
-#   }
-#   # # Check if groups overlap across se_ objects
-#   # group_lists <- lapply(se_objects, function(se) {
-#   #   if (!is.null(se)) {
-#   #     return(unique(colData(se)$group))
-#   #   } else {
-#   #     return(NULL)
-#   #   }
-#   # })
-
-#   # Remove NULLs and check for overlap
-#   group_lists <- Filter(Negate(is.null), group_lists)
-#   if (length(group_lists) > 1 && length(Reduce(intersect, group_lists)) == 0) {
-#     warning("check_se: Groups do not overlap at all across se_ objects.")
-#   }
-
-#   # Check if names_to_check are valid for each se_ object
-#   if (!is.null(se_objects$se_metabo) && !suppressWarnings(check_chebi(rownames(rowData(se_objects$se_metabo)))) && !suppressWarnings(check_inchi(rownames(rowData(se_objects$se_metabo))))) {
-#     stop("check_se: Invalid ChEBI or InChI IDs in rownames(rowData(se_metabo)).")
-#   }
-#   if (!is.null(se_objects$se_prot) && !suppressWarnings(check_uniprot(rownames(rowData(se_objects$se_prot))))) {
-#     stop("check_se: Invalid UniProt IDs in rownames(rowData(se_prot)).")
-#   }
-#   if (!is.null(se_objects$se_trans) && !suppressWarnings(check_ensembl(rownames(rowData(se_objects$se_trans))))) {
-#     stop("check_se: Invalid Ensembl IDs or Gene Symbols in rownames(rowData(se_trans)).")
-#   }
-
-#   return(TRUE)
-# }
 
 # Function to validate contrasts
 check_contrast <- function(contrast, groups) {

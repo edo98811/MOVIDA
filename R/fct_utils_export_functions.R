@@ -1,18 +1,11 @@
-# Function to export code to a file
-# This function takes a code object and an ID string, processes them, and generates
-# a formatted string that includes variable definitions and the provided code.
-
-# code <- function() {
-#         plot_expression_for_transcriptomics(
-#           selected,
-#           movida_data$get_expression("transcriptomics"),
-#           movida_data$get_anno_df("transcriptomics"),
-#           use_gene_name = (source == "transcriptomics"), 
-#           export_data = export_data
-#         )
-#       }
-
-# id <- paste0("source_prot;selected_fafasdf")
+#' Export Code to File
+#'
+#' Function to be used in MOVIDA app to export code snippets to a file.
+#' 
+#' This function exports a given code object to a file, using a specified ID string.
+#' It processes the code and ID, generating a formatted string that includes variable
+#' definitions and the provided code. This is useful for saving reproducible code snippets
+#' or analysis steps for later use or sharing.
 export_code <- function(code, id) {
 
   # Convert the code object to a character string

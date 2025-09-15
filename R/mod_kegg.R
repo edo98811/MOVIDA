@@ -1,4 +1,4 @@
-#' module_plotting_lineplot UI Function
+#' module_kegg UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -14,7 +14,7 @@ mod_kegg_ui <- function(id) {
   )
 }
     
-#' module_plotting_lineplot Server Functions
+#' module_kegg Server Functions
 #'
 #' @noRd 
 mod_kegg_server <- function(id){
@@ -25,7 +25,7 @@ mod_kegg_server <- function(id){
 }
     
 ## To be copied in the UI
-# mod_module_plotting_lineplot_ui("module_plotting_lineplot_1")
+# mod_module_kegg_ui("module_kegg_1")
     
 ## To be copied in the server
-# mod_module_plotting_lineplot_server("module_plotting_lineplot_1")
+# mod_module_kegg_server("module_kegg_1")
