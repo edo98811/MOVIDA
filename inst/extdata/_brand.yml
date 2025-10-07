@@ -1,9 +1,0 @@
-
-color:
-  primary: "#ff6600"
-  background: "#ffffff"
-  foreground: "#000000"
-typography:
-  base:
-    family: "Helvetica, serif"
-    size: 1rem
