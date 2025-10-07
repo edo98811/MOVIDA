@@ -7,13 +7,14 @@
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
-#' @noRd 
+#' @noRd
 #'
-#' @importFrom shiny NS tagList 
+#' @importFrom shiny NS tagList
 mod_plotting_ui <- function(id) {
   ns <- NS(id) # Namespace for the module
   page_fillable(
     accordion(
+      accordion_panel("Bookmarked values", uiOutput(ns("bookmarked_values"))),
       accordion_panel("Line Plot", uiOutput(ns("line_plot"))),
       accordion_panel("Heatmap", uiOutput(ns("heatma_plot"))),
       accordion_panel("PCA", uiOutput(ns("pca_plot"))),
@@ -22,15 +23,33 @@ mod_plotting_ui <- function(id) {
   )
 }
 
-    
+
 #' module plotting section Server Functions
 #'
-#' @noRd 
+#' @noRd
 mod_plotting_server <- function(id, dashboard_elements, bookmarked_elements, movida_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     sources <- movida_data$get_sources()
+
+    #### UI FOR BOOKMARKED VALUES ####
+    output$bookmarked_values <- renderUI({
+      if (length(bookmarked_elements()) == 0) {
+        h4("No bookmarked values")
+      } else {
+        mod_table_ui(ns("bookmarked"))
+      }
+    })
+
+    #### SERVER LOGIC FOR BOOKMARKED VALUES ####
+    mod_table_server(
+      id = "bookmarked",
+      main_table_function = reactive({
+        movida_data$getDEA(source, bookmarked_elements(), FDRpvalue = NULL, FDRadj = NULL)
+      }),
+      selected_row = row_to_select
+    )
 
     #### UI FOR LINE PLOT ####
     output$line_plot <- renderUI({
@@ -176,7 +195,7 @@ mod_plotting_server <- function(id, dashboard_elements, bookmarked_elements, mov
       paste0(
         "source_", input$source_selector,
         ";selected_", input$group_column,
-        ";selected_metadata_subset",  paste(input$subset_group, collapse = "_"),
+        ";selected_metadata_subset", paste(input$subset_group, collapse = "_"),
         ";selected_metadata_column", input$group_column,
         ";mean_median_", mean_median(),
         ";features_", paste(input$features_search_box, collapse = "_")
