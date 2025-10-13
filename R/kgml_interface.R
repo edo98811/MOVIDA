@@ -69,6 +69,7 @@ parse_kgml_entries <- function(file) {
     width = xml_attr(graphics, "width"),
     height = xml_attr(graphics, "height")
   )
+  # Example entry:
   #     <entry id="184" name="ko:K15359 ko:K18276" type="ortholog" reaction="rn:R09472"
   # link="https://www.kegg.jp/dbget-bin/www_bget?K15359+K18276">
   # <graphics name="K15359..." fgcolor="#000000" bgcolor="#FFFFFF"
