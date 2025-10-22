@@ -9,3 +9,6 @@
 test_data/
 Example_data/
 relationships/
+inst/doc
+*.xml
+image.png
