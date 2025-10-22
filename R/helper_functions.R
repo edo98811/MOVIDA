@@ -20,16 +20,24 @@ remove_kegg_prefix <- function(kegg_ids) {
 #' @param results_combined Data frame with combined results containing columns: KEGG, value, source
 #' @return Updated nodes data frame with added columns: value, color, source, text
 add_results_nodes <- function(nodes_df, results_combined) {
+  nodes_df[, c("value", "color", "source", "text")] <- NA # Initialize new columns
 
-  nodes_df[, c("value", "color", "source", "text")] <- NA
-
-  # Iterate through nodes_df and results_combined to map values, adds four columns: value, color, source, text
+  # Iterate through nodes_df and results_combined to map values
   for (i in nrow(nodes_df)) {
     for (j in nrow(results_combined)) {
       if (grepl(results_combined$KEGG[j], nodes_df$KEGG[i])) { # I made sure in both cases the keggs are without the prefix
-        nodes_df$value[i] <- results_combined$value[j]
-        nodes_df$source[i] <- results_combined$source[j]
-        nodes_df$text[i] <- list()
+
+        # if no value assigned to the node, assign the one from results_combined
+        if (is.na(nodes_df$value[i])) {
+          nodes_df$value[i] <- results_combined$value[j]
+          nodes_df$source[i] <- results_combined$source[j]
+          nodes_df$text[i] <- list()
+        } 
+        else { # if value warn
+          warning(paste0("Multiple results mapped to node ", nodes_df$id[i], ". Keeping the first occurrence to color the node."))
+        }
+
+        # This will be added in any case
         nodes_df$text[i] <- append(nodes_df$text[i], paste0(
           "Source: ",
           results_combined$source[j], ";Value: ",
@@ -51,7 +59,7 @@ color_nodes <- function(nodes_df) {
 #' Combine multiple differential expression results into a single data frame
 #' @param results_list A named list where each element is a differential expression result containing a data frame (de_table), value column name (value_column), and feature column name (feature_column)
 #' @return A combined data frame with columns: KEGG, value, source
-combine_results_dataframe <- function(results_list) {
+combine_results_in_dataframe <- function(results_list) {
   results <- lapply(names(results_list), function(de_entry_name) {
     de_entry <- results_list[[de_entry_name]]
     de_table <- de_entry$de_table

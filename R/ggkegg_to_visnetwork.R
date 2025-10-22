@@ -38,7 +38,7 @@ ggkegg_to_igraph <- function(path_id, organism = "mmu", de_results = NULL) {
   if (is.null(kgml_file)) {
     warning("Failed to download KGML file for pathway ID: ", path_id)
     return(NULL)
-  } 
+  }
 
   # Plot_title
   pathway_name <- paste0("(", path_id, ") ", get_pathway_name(path_id))
@@ -53,9 +53,10 @@ ggkegg_to_igraph <- function(path_id, organism = "mmu", de_results = NULL) {
 
   # --- 2. Color and style nodes and edges ---
   # Color based on de resultsß
-  nodes_df <- color_nodes(nodes_df, de_results)
+  nodes_df <- add_results_to_nodes(nodes_df, de_results)
 
   # Nodes
+  nodes_df <- add_colors_to_nodes(nodes_df)
   nodes_df <- style_nodes(nodes_df)
 
   # Edges
@@ -99,10 +100,10 @@ scale_dimensions <- function(nodes_df, factor = 2) {
 
 
 style_nodes <- function(nodes_df) {
-  nodes_df$shape = "box"
-  nodes_df$fixed = TRUE  # to avid moving nodes
-  nodes_df$x = x
-  nodes_df$y = y
+  nodes_df$shape <- "box"
+  nodes_df$fixed <- TRUE # to avid moving nodes
+  nodes_df$x <- x
+  nodes_df$y <- y
   nodes_df$widthConstraint <- nodes$width
   nodes_df$heightConstraint <- nodes$height
 
@@ -134,8 +135,8 @@ style_edges <- function(edges_df) {
     others_unknown = list(color = "black", dashes = TRUE, arrows = "to", label = "?")
   )
 
-  edges_df$subtype[is.na(edges_df$subtype)] <- "others_unknown"
-  edges_df$subtype <- gsub("/", "_", edges_df$subtype )
+  edges_df$subtype[is.na(edges_df$subtype) || !(edges_subtype %in% names(edge_style_map))] <- "others_unknown"
+  edges_df$subtype <- gsub("/", "_", edges_df$subtype)
 
   edges_df$color <- sapply(edges$subtype, function(x) edge_style_map[[x]]$color)
   edges_df$dashes <- sapply(edges$subtype, function(x) edge_style_map[[x]]$dashes)
@@ -150,59 +151,64 @@ style_edges <- function(edges_df) {
 #'
 #' @return nodes_df with an added 'color', 'source' and 'value' column.
 add_results_to_nodes <- function(nodes_df, de_results_list) {
+  # this function combines all results into a single data frame
+  results_combined <- combine_results_in_dataframe(de_results_list)
 
-  # get kegg ids from nodes, some nodes may have multiple kegg ids separated by ";"
-  # kegg_ids_in_graph <- expand_results(nodes_df$KEGG) # tested 
-  results_combined <- combine_results_dataframe(de_results_list) # tested
-
+  # Iterate through nodes_df and results_combined to add the results to the nodes
   nodes_df <- add_results_nodes(nodes_df, results_combined)
 
-  # For each entry in de_results_list, map values to KEGG ids in the graph. Returns a list of dataframes with columns (KEGG, de_value or NULL if no mapping)
-  kegg_ids_with_values <- lapply(de_results_list, match_de_values, kegg_ids_in_graph = kegg_ids_in_graph) # tested
-  kegg_ids_with_values <- Reduce(function(x, y) merge(x, y, by = c("KEGG"), all = TRUE), kegg_ids_with_values)
-  colnames(kegg_ids_with_values) <- c("KEGG", names(de_results_list))
+  return(nodes_df)
+}
 
-  # # Warn if values are present in more than one column (excluding KEGG and value_to_plot)
-  # value_counts <- rowSums(!is.na(kegg_ids_with_values[ , names(de_results_list)]))
-  # if (any(value_counts > 1)) {
-  #   warning("Some KEGG IDs have values in more than one differential expression source column.")
-  # }
+#' Add color palettes
+#' @param nodes_df Data frame of nodes with 'value' and 'source' columns.
+#' @return nodes_df with colored nodes based on their values.
+#' @import RcolorBrewer
+add_colors_to_nodes <- function(nodes_df) {
 
-  # kegg_ids_with_values$value_to_plot <- rowMeans(kegg_ids_with_values[ , -1], na.rm = TRUE)
+  palettes <- c(
+    "RdGy",
+    "RdBu",
+    "PuOr",
+    "PRGn",
+    "PiYG",
+    "BrBG"
+  )
 
+  # Get unique sources
+  sources <- unique(na.omit(nodes_df$source))
 
-  # kegg_ids_with_values$source <- apply(kegg_ids_with_values[ , -c(1, ncol(kegg_ids_with_values))], 1, function(row) {
-  #   sources <- names(de_results_list)[!is.na(row)]
-  #   if (length(sources) == 0) {
-  #     return(NA)
-  #   } else {
-  #     return(paste(sources, collapse = ";"))
-  #   }
-  # })
-#  Example of kegg_ids_with_values:
-#       KEGG    trans       prot      metabo value_to_plot source
-# 1    C00076       NA         NA -0.04287046   -0.04287046 metabo
-# 2    C00165       NA         NA          NA           NaN   <NA>
-# 3    C00338       NA         NA          NA           NaN   <NA>
-# 4    C00575 1.368602         NA          NA    1.36860228  trans
-# 5    C01245       NA         NA          NA           NaN   <NA>
-# 6  hsa04010       NA         NA          NA           NaN   <NA>
-# 7  hsa04070       NA         NA          NA           NaN   <NA>
-# an idea may be not to have value to plot and source, only create the sources column in the nodes_df. the rest is also added in the function so that i can delelte all the things that now are commented and put them in the add_values_to_nodes function' 
-# idea for the function: iterate through nodes, see if each kegg id is present in the dataframe, if yes generate the sources string and add the value (maybe first if multiple?) column and sources column before
-# to map to
-#    id    name           type  link  reaction graphics_name label fgcolor bgcolor
-#    <chr> <chr>          <chr> <chr> <chr>    <chr>         <chr> <chr>   <chr>  
-#  1 19    cpd:C00338     comp… http… NA       C00338        C003… #000000 #FFFFFF
-#  2 20    hsa:5923 hsa:… gene  http… NA       RASGRF1, CDC… RASG… #000000 #BFFFBF
-#  3 21    hsa:11221 hsa… gene  http… NA       DUSP10, MKP-… DUSP… #000000 #BFFFBF
-#  4 22    hsa:1845 hsa:… gene  http… NA       DUSP3, VHR... DUSP… #000000 #BFFFBF
+  # Apply a color palette to each source
+  for (source_index in seq_along(sources)) {
+    palette <- palettes[[((source_index - 1) %% length(palettes)) + 1]]
+    palette_colors <- RColorBrewer::brewer.pal(n = 11, name = palette)
+    palette_ramp <- colorRampPalette(palette_colors)
 
-  # Merge the single mappings dataframe for each entry in de_results_list, adds source info
-  nodes_df <- add_values_to_nodes(nodes_df, kegg_ids_with_values)
+    nodes_to_color <- nodes_df[nodes_df$source == sources[source_index], , drop = FALSE]
 
-  # Add colors based on values
-  nodes_df <- add_colors_to_nodes(nodes_df)
+    if (nrow(nodes_to_color) > 1) {
+      max_val <- max(nodes_to_color$value)
+      min_val <- min(nodes_to_color$value)
+    } else if (nrow(nodes_to_color) == 1) {
+      max_val <- abs(nodes_to_color$value[1])
+      min_val <- -abs(nodes_to_color$value[1])
+    } else {
+      next
+    }
+
+    # Compute color scaling around the center, maybe a better way to do this?
+    range_val <- max(abs(c(max_val, min_val)))
+
+    # Normalize values from -range_val to +range_val → [0,1]
+    scaled_values <- (nodes_to_color$value + range_val) / (2 * range_val)
+    scaled_values <- pmin(pmax(scaled_values, 0), 1) # clamp to [0, 1]
+
+    # Assign colors based on scaled values
+    nodes_to_color$color <- palette_ramp(100)[as.numeric(cut(scaled_values, breaks = 100, include.lowest = TRUE))]
+
+    # Update main data frame
+    nodes_df$color[nodes_df$source == sources[source_index]] <- nodes_to_color$color
+  }
 
   return(nodes_df)
 }
