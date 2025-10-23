@@ -21,7 +21,7 @@ parse_kgml_relations <- function(file) {
         from = entry1,
         to = entry2,
         type = type,
-        name = NA_character_,
+        subtype = NA_character_,
         value = NA_character_
       )
     } else {

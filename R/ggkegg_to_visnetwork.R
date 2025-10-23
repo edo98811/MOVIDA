@@ -9,7 +9,7 @@
 #' @importFrom magrittr %>%
 #'
 #' @export
-ggkegg_to_igraph <- function(path_id, organism = "mmu", de_results = NULL) {
+ggkegg_to_igraph <- function(path_id, organism = "mmu", de_results = NULL, return_type = "igraph") {
   # Validate pathway ID format
   if (!is_valid_pathway(path_id)) {
     stop("Invalid KEGG pathway ID format. Must be like 'hsa:04110' or '04110'.")
@@ -22,7 +22,7 @@ ggkegg_to_igraph <- function(path_id, organism = "mmu", de_results = NULL) {
       return(NULL)
     }
     # Keep only valid entries
-    valid_entries <- de_results[vapply(names(de_results), function(name) check_de_entry(de_results[[name]], name), logical(1))]
+    de_results <- de_results[vapply(names(de_results), function(name) check_de_entry(de_results[[name]], name), logical(1))]
   }
 
   if (!is.character(organism) || length(organism) != 1) {
@@ -65,10 +65,17 @@ ggkegg_to_igraph <- function(path_id, organism = "mmu", de_results = NULL) {
   # --- 3. Scale node coordinates ---
   nodes_df <- scale_dimensions(nodes_df, factor = 2.5)
 
-  # Create igraph object
+  # --- 4. Create igraph object ---
   kegg_igraph <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
 
-  return(kegg_igraph)
+  if (return_type == "igraph") {
+    return(kegg_igraph)
+  } else if (return_type == "visNetwork") {
+    return(
+      visNetwork::visIgraph(kegg_igraph, main = pathway_name) %>%
+        visNetwork::visPhysics(enabled = FALSE)
+    )
+  }
 
   # --- 4. Define legend edges ---
   # legend_elements <- create_legend_dataframe(edges_df)
@@ -100,14 +107,17 @@ scale_dimensions <- function(nodes_df, factor = 2) {
 
 
 style_nodes <- function(nodes_df) {
-  nodes_df$shape <- "box"
-  nodes_df$fixed <- TRUE # to avid moving nodes
-  nodes_df$x <- x
-  nodes_df$y <- y
-  nodes_df$widthConstraint <- nodes$width
-  nodes_df$heightConstraint <- nodes$height
-
+  # Base visual settings
   nodes_df$shape <- ifelse(nodes_df$type == "compound", "ellipse", "box")
+  nodes_df$fixed <- TRUE # prevent node movement
+  nodes_df$node_name <- nodes_df$name
+  nodes_df$name <- nodes_df$id
+
+  nodes_df$widthConstraint <- as.numeric(nodes_df$width)
+  nodes_df$heightConstraint <-  as.numeric(nodes_df$height)
+
+  nodes_df[!nodes_df$name == "undefined", ] # delete the groups (maybe later do something else with them)
+
   nodes_df$title <- paste0("<b>", nodes_df$label, "</b><br>KEGG ID(s): ", nodes_df$KEGG)
 
   return(nodes_df)
@@ -115,7 +125,6 @@ style_nodes <- function(nodes_df) {
 
 
 style_edges <- function(edges_df) {
-  browser()
   edge_style_map <- list(
     compound = list(color = "black", dashes = FALSE, arrows = "to", label = ""),
     hidden_compound = list(color = "lightgray", dashes = FALSE, arrows = "to", label = ""),
@@ -135,13 +144,16 @@ style_edges <- function(edges_df) {
     others_unknown = list(color = "black", dashes = TRUE, arrows = "to", label = "?")
   )
 
-  edges_df$subtype[is.na(edges_df$subtype) || !(edges_subtype %in% names(edge_style_map))] <- "others_unknown"
+  # https://builtin.com/data-science/and-in-r#:~:text=The%20single%20sign%20version%20%7C%20returns,first%20element%20of%20each%20vector.
   edges_df$subtype <- gsub("/", "_", edges_df$subtype)
+  edges_df$subtype[is.na(edges_df$subtype) | !(edges_df$subtype %in% names(edge_style_map))] <- "others_unknown"
 
-  edges_df$color <- sapply(edges$subtype, function(x) edge_style_map[[x]]$color)
-  edges_df$dashes <- sapply(edges$subtype, function(x) edge_style_map[[x]]$dashes)
-  edges_df$arrows <- sapply(edges$subtype, function(x) edge_style_map[[x]]$arrows)
-  edges_df$label <- sapply(edges$subtype, function(x) edge_style_map[[x]]$label)
+  edges_df$color <- vapply(edges_df$subtype, function(x) edge_style_map[[x]]$color, character(1))
+  edges_df$dashes <- vapply(edges_df$subtype, function(x) edge_style_map[[x]]$dashes, logical(1))
+  edges_df$arrows <- vapply(edges_df$subtype, function(x) edge_style_map[[x]]$arrows, character(1))
+  edges_df$label <- vapply(edges_df$subtype, function(x) edge_style_map[[x]]$label, character(1))
+
+  return(edges_df)
 }
 
 
@@ -163,9 +175,8 @@ add_results_to_nodes <- function(nodes_df, de_results_list) {
 #' Add color palettes
 #' @param nodes_df Data frame of nodes with 'value' and 'source' columns.
 #' @return nodes_df with colored nodes based on their values.
-#' @import RcolorBrewer
+#' @importFrom RColorBrewer brewer.pal
 add_colors_to_nodes <- function(nodes_df) {
-
   palettes <- c(
     "RdGy",
     "RdBu",
@@ -177,38 +188,39 @@ add_colors_to_nodes <- function(nodes_df) {
 
   # Get unique sources
   sources <- unique(na.omit(nodes_df$source))
+  valid_nodes <- nodes_df[!is.na(nodes_df$source), , drop = FALSE]
 
   # Apply a color palette to each source
   for (source_index in seq_along(sources)) {
     palette <- palettes[[((source_index - 1) %% length(palettes)) + 1]]
-    palette_colors <- RColorBrewer::brewer.pal(n = 11, name = palette)
+    palette_colors <- brewer.pal(n = 11, name = palette)
     palette_ramp <- colorRampPalette(palette_colors)
-
-    nodes_to_color <- nodes_df[nodes_df$source == sources[source_index], , drop = FALSE]
+    nodes_to_color <- valid_nodes[valid_nodes$source == sources[source_index], , drop = FALSE]
 
     if (nrow(nodes_to_color) > 1) {
-      max_val <- max(nodes_to_color$value)
-      min_val <- min(nodes_to_color$value)
+      range_val <- max(abs(nodes_to_color$value))
     } else if (nrow(nodes_to_color) == 1) {
-      max_val <- abs(nodes_to_color$value[1])
-      min_val <- -abs(nodes_to_color$value[1])
+      range_val <- abs(nodes_to_color$value[[1]])
     } else {
       next
     }
+    # For ggplot: https://stackoverflow.com/questions/79132520/symmetric-colorbar-for-values-but-print-colorbar-for-actual-observed-values
 
-    # Compute color scaling around the center, maybe a better way to do this?
-    range_val <- max(abs(c(max_val, min_val)))
+    # Cut values using real numeric range (from -range_val to +range_val)
+    # Generate breaks
+    breaks_seq <- seq(-range_val, range_val, length.out = 101)
 
-    # Normalize values from -range_val to +range_val → [0,1]
-    scaled_values <- (nodes_to_color$value + range_val) / (2 * range_val)
-    scaled_values <- pmin(pmax(scaled_values, 0), 1) # clamp to [0, 1]
-
-    # Assign colors based on scaled values
-    nodes_to_color$color <- palette_ramp(100)[as.numeric(cut(scaled_values, breaks = 100, include.lowest = TRUE))]
+    # Use the cut function to assign colors based on the breaks (cut retrieves the index of the corresponding bin)
+    # cut: https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/cut
+    # may be useful to add general info in the dataframe: https://stackoverflow.com/questions/42217741/how-do-i-add-an-attribute-to-an-r-data-frame-while-im-making-it-with-a-function
+    nodes_to_color$color <- palette_ramp(100)[
+      as.numeric(cut(nodes_to_color$value, breaks = breaks_seq, include.lowest = TRUE))
+    ]
 
     # Update main data frame
-    nodes_df$color[nodes_df$source == sources[source_index]] <- nodes_to_color$color
+    valid_nodes$color[valid_nodes$source == sources[source_index]] <- nodes_to_color$color
   }
+  nodes_df$color[!is.na(nodes_df$source)] <- valid_nodes$color
 
   return(nodes_df)
 }

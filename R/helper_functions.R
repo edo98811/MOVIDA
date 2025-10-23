@@ -20,30 +20,31 @@ remove_kegg_prefix <- function(kegg_ids) {
 #' @param results_combined Data frame with combined results containing columns: KEGG, value, source
 #' @return Updated nodes data frame with added columns: value, color, source, text
 add_results_nodes <- function(nodes_df, results_combined) {
-  nodes_df[, c("value", "color", "source", "text")] <- NA # Initialize new columns
+  nodes_df[, c("value", "color", "source")] <- NA # Initialize new columns
+  nodes_df$text <- ""
 
   # Iterate through nodes_df and results_combined to map values
-  for (i in nrow(nodes_df)) {
-    for (j in nrow(results_combined)) {
+  # For each node iterate over all results_combined
+  for (i in seq_len(nrow(nodes_df))) {
+    for (j in seq_len(nrow(results_combined))) {
       if (grepl(results_combined$KEGG[j], nodes_df$KEGG[i])) { # I made sure in both cases the keggs are without the prefix
-
-        # if no value assigned to the node, assign the one from results_combined
+        # If no value assigned to the node, assign the one from results_combined
         if (is.na(nodes_df$value[i])) {
           nodes_df$value[i] <- results_combined$value[j]
           nodes_df$source[i] <- results_combined$source[j]
-          nodes_df$text[i] <- list()
-        } 
-        else { # if value warn
-          warning(paste0("Multiple results mapped to node ", nodes_df$id[i], ". Keeping the first occurrence to color the node."))
+          # nodes_df$text[i] <- list()
+        } else { # If value warn
+          warning(paste0("Multiple results mapped to node ", nodes_df$KEGG[i], ". Keeping the first occurrence to color the node."))
         }
 
         # This will be added in any case
-        nodes_df$text[i] <- append(nodes_df$text[i], paste0(
-          "Source: ",
-          results_combined$source[j], ";Value: ",
-          results_combined$value[j], ";Id: ",
-          results_combined$KEGG[j]
-        ))
+        sep <- ","
+        nodes_df$text[i] <- paste0(
+          nodes_df$text[i],
+          "Source: ", results_combined$source[j], sep,
+          "Value: ", results_combined$value[j], sep,
+          "Id: ", results_combined$KEGG[j], ";"
+        )
       }
     }
   }
@@ -82,20 +83,24 @@ combine_results_in_dataframe <- function(results_list) {
 #' Handle multiple KEGG IDs in a single string separated by ";"
 #' @param kegg_string Character string of KEGG IDs separated by ";"
 #' @return Data frame with a single column 'KEGG' containing individual KEGG IDs
-expand_keggs <- function(kegg_vector) {
-  ids <- lapply(kegg_vector, function(ids_string) {
-    return(unlist(strsplit(ids_string, ";")))
-  })
-  return(data.frame(KEGG = unique(unlist(ids, use.names = FALSE))))
-}
+expand_keggs <- function(kegg_df) {
+  # Initialize empty vectors to store results
+  ids_out <- c()
+  kegg_out <- c()
 
-#' Map normalized values to colors using a specified palette
-#' @param vals_norm Numeric vector of normalized values (e.g., between -1 and 1)
-#' @param palette Character vector of colors to use for the gradient (e.g., c("blue", "white", "red"))
-#' @param na_color Color to use for NA
-#' @return Named Character vector of colors (feature: color)
-add_colors_to_nodes <- function(vals_norm, palette, na_color = "white") {
-  # Function body needed
+  # Loop through each row of the data frame
+  for (i in seq_len(nrow(kegg_df))) {
+    # Split the KEGG string by ";"
+    split_ids <- unlist(strsplit(kegg_df$KEGG[i], ";"))
+    # Remove the prefix before ":" in each KEGG ID
+    split_ids <- sub(".*:", "", split_ids)
+    # Append the row ids and KEGG IDs
+    ids_out <- c(ids_out, rep(kegg_df$id[i], length(split_ids)))
+    kegg_out <- c(kegg_out, split_ids)
+  }
+
+  # Return the expanded data frame
+  return(data.frame(id = ids_out, KEGG = kegg_out, stringsAsFactors = FALSE))
 }
 
 #' Merge a list of character vectors into a single data frame, handling repetitions.
@@ -149,7 +154,7 @@ to_organism_kegg <- function(organism) {
 }
 
 #' Map differential expression values to KEGG IDs present in the graph
-#' @param de_entry
+#' @param de_entry A single differential expression result entry containing de_table, value_column, and feature_column
 #' @param kegg_ids_in_graph Character vector of KEGG IDs present in the graph
 #' @return A data frame with columns: node_id (KEGG ID), value (mapped value)
 match_de_values <- function(de_entry, kegg_ids_in_graph) {
