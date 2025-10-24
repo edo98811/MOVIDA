@@ -12,3 +12,4 @@ relationships/
 inst/doc
 *.xml
 image.png
+kgml_cache/
