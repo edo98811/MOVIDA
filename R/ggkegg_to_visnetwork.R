@@ -52,8 +52,9 @@ ggkegg_to_igraph <- function(path_id, organism = "mmu", de_results = NULL, retur
   nodes_df$KEGG <- vapply(nodes_df$name, remove_kegg_prefix_str, FUN.VALUE = character(1))
 
   # --- 2. Color and style nodes and edges ---
-  # Color based on de resultsß
-  nodes_df <- add_results_to_nodes(nodes_df, de_results)
+  # Color based on de results
+  results_combined <- combine_results_in_dataframe(de_results)
+  nodes_df <- add_results_nodes(nodes_df, results_combined)
 
   # Nodes
   nodes_df <- add_colors_to_nodes(nodes_df)
@@ -114,7 +115,7 @@ style_nodes <- function(nodes_df) {
   nodes_df$name <- nodes_df$id
 
   nodes_df$widthConstraint <- as.numeric(nodes_df$width)
-  nodes_df$heightConstraint <-  as.numeric(nodes_df$height)
+  nodes_df$heightConstraint <- as.numeric(nodes_df$height)
 
   nodes_df[!nodes_df$name == "undefined", ] # delete the groups (maybe later do something else with them)
 
@@ -156,21 +157,66 @@ style_edges <- function(edges_df) {
   return(edges_df)
 }
 
+#' Add results from combined results data frame to nodes data frame
+#' @param nodes_df Data frame of nodes with a column 'KEGG'
+#' @param results_combined Data frame with combined results containing columns: KEGG, value, source
+#' @return Updated nodes data frame with added columns: value, color, source, text
+add_results_nodes <- function(nodes_df, results_combined) {
+  nodes_df[, c("value", "color", "source")] <- NA # Initialize new columns
+  nodes_df$text <- ""
 
-#' Color nodes based on differential expression results.
-#' @param nodes_df Data frame of nodes with a 'KEGG' column.
-#' @param de_results_list Named list of differential expression results.
-#'
-#' @return nodes_df with an added 'color', 'source' and 'value' column.
-add_results_to_nodes <- function(nodes_df, de_results_list) {
-  # this function combines all results into a single data frame
-  results_combined <- combine_results_in_dataframe(de_results_list)
+  # Iterate through nodes_df and results_combined to map values
+  # For each node iterate over all results_combined
+  for (i in seq_len(nrow(nodes_df))) {
+    for (j in seq_len(nrow(results_combined))) {
+      if (grepl(results_combined$KEGG[j], nodes_df$KEGG[i])) { # I made sure in both cases the keggs are without the prefix
+        # If no value assigned to the node, assign the one from results_combined
+        if (is.na(nodes_df$value[i])) {
+          nodes_df$value[i] <- results_combined$value[j]
+          nodes_df$source[i] <- results_combined$source[j]
+          # nodes_df$text[i] <- list()
+        } else { # If value warn
+          warning(paste0("Multiple results mapped to node ", nodes_df$KEGG[i], ". Keeping the first occurrence to color the node."))
+        }
 
-  # Iterate through nodes_df and results_combined to add the results to the nodes
-  nodes_df <- add_results_nodes(nodes_df, results_combined)
+        # This will be added in any case
+        sep <- ","
+        nodes_df$text[i] <- paste0(
+          nodes_df$text[i],
+          "Source: ", results_combined$source[j], sep,
+          "Value: ", results_combined$value[j], sep,
+          "Id: ", results_combined$KEGG[j], ";"
+        )
+      }
+    }
+  }
 
   return(nodes_df)
 }
+
+#' Combine multiple differential expression results into a single data frame
+#' @param results_list A named list where each element is a differential expression result containing a data frame (de_table), value column name (value_column), and feature column name (feature_column)
+#' @return A combined data frame with columns: KEGG, value, source
+combine_results_in_dataframe <- function(results_list) {
+  results <- lapply(names(results_list), function(de_entry_name) {
+    de_entry <- results_list[[de_entry_name]]
+    de_table <- de_entry$de_table
+    value_column <- de_entry$value_column
+    feature_column <- de_entry$feature_column
+
+    de_table[[feature_column]] <- remove_kegg_prefix(de_table[[feature_column]])
+
+    data.frame(
+      KEGG = de_table[[feature_column]],
+      value = de_table[[value_column]],
+      source = rep(de_entry_name, nrow(de_table)),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  return(do.call(rbind, results))
+}
+
 
 #' Add color palettes
 #' @param nodes_df Data frame of nodes with 'value' and 'source' columns.
