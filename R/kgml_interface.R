@@ -1,5 +1,5 @@
 #' Parse KEGG KGML files to extract relations and edges data frames.
-#' 
+#'
 #' @param file Path to the KGML XML file.
 #' @return A tibble with columns: from, to, type, name, value.
 #' @importFrom xml2 read_xml xml_find_all xml_attr
@@ -38,7 +38,7 @@ parse_kgml_relations <- function(file) {
 
 
 #' Parse KEGG KGML files to extract nodes and edges data frames.
-#' 
+#'
 #' @param file Path to the KGML XML file.
 #' @return A tibble with columns: id, name, type, link, reaction, graphics_name, fgcolor, bgcolor, graphics_type, x, y, width, height.
 #' @importFrom xml2 read_xml xml_find_all xml_attr
@@ -67,7 +67,11 @@ parse_kgml_entries <- function(file) {
     x = xml_attr(graphics, "x"),
     y = xml_attr(graphics, "y"),
     width = xml_attr(graphics, "width"),
-    height = xml_attr(graphics, "height")
+    height = xml_attr(graphics, "height"),
+    value = NA,
+    source = NA_character_,
+    color = NA_character_,
+    text = NA_character_
   )
   # Example entry:
   #     <entry id="184" name="ko:K15359 ko:K18276" type="ortholog" reaction="rn:R09472"
