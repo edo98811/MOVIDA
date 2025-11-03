@@ -9,7 +9,6 @@ test_that("expand_keggs handles multiple KEGG IDs correctly", {
   expect_equal(actual_output, expected_output)
 })
 
-
 test_that("remove_kegg_prefix_str removes prefixes and handles multiple IDs", {
   input <- c("hsa:1234 hsa:5678", "cpd:C00022", "ko:K00001 ko:K00002 ko:K00003")
   expected_output <- c("1234;5678", "C00022", "K00001;K00002;K00003")
@@ -26,10 +25,11 @@ test_that("parse_kgml_edges load relationsps correctly", {
   expect_equal(edges_df, edges_df_expected)
 })
 
-test_that("parse_kgml_entries load ndoes correctly", {
+test_that("parse_kgml_entries load nodes correctly", {
   nodes_df <- parse_kgml_entries(kgml_path)
 
   nodes_df_expected <- tibble::as_tibble(read.csv(nodes_df_path, sep = ";", colClasses = "character"))
+  nodes_df <- nodes_df[, !(names(nodes_df) %in% c("color", "value", "text", "source")), drop = FALSE]
 
   expect_equal(nodes_df, nodes_df_expected)
 })

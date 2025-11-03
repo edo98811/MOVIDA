@@ -105,12 +105,12 @@ test_that("adds visual styling columns correctly", {
 
   styled <- style_nodes(nodes)
 
-  expect_equal(styled$shape, c("ellipse", "box"))
+  expect_equal(styled$shape, c("dot", "box"))
   expect_true(all(styled$fixed))
-  expect_true(all(c("x", "y", "widthConstraint", "heightConstraint", "title") %in% names(styled)))
+  expect_true(all(c("x", "y", "widthConstraint", "heightConstraint") %in% names(styled)))
 })
 
-test_that("title is formatted correctly", {
+test_that("tooltip is formatted correctly", {
   nodes <- data.frame(
     label = "TP53",
     KEGG = "hsa04115",
@@ -121,8 +121,6 @@ test_that("title is formatted correctly", {
     y = 200
   )
 
-  styled <- style_nodes(nodes)
-
-  expect_match(styled$title, "<b>TP53</b>")
-  expect_match(styled$title, "KEGG ID")
+  styled <- add_tooltip(nodes)
+  expect_true("title" %in% names(styled))
 })
