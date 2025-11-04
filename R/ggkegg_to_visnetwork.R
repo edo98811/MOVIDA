@@ -323,9 +323,9 @@ add_colors_to_nodes <- function(nodes_df) {
     nodes_to_color <- valid_nodes[valid_nodes$source == sources[source_index], , drop = FALSE]
 
     if (nrow(nodes_to_color) > 1) {
-      range_val <- max(abs(nodes_to_color$value))
+      range_val <- max(abs(as.numeric(nodes_to_color$value)))
     } else if (nrow(nodes_to_color) == 1) {
-      range_val <- abs(nodes_to_color$value[[1]])
+      range_val <- abs(as.numeric(nodes_to_color$value[[1]]))
     } else {
       next
     }
@@ -339,7 +339,7 @@ add_colors_to_nodes <- function(nodes_df) {
     # cut: https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/cut
     # may be useful to add general info in the dataframe: https://stackoverflow.com/questions/42217741/how-do-i-add-an-attribute-to-an-r-data-frame-while-im-making-it-with-a-function
     nodes_to_color$color <- palette_ramp(100)[
-      as.numeric(cut(nodes_to_color$value, breaks = breaks_seq, include.lowest = TRUE))
+      as.numeric(cut(as.numeric(nodes_to_color$value), breaks = breaks_seq, include.lowest = TRUE))
     ]
 
     # Update main data frame
