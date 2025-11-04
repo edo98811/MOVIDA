@@ -13,16 +13,17 @@ kegg_to_graph <- function(path_id,
                           de_results = NULL,
                           return_type = "igraph",
                           scaling_factor = 2.5) {
-
   # --- 0. Validate inputs ---
   if (!is_valid_pathway(path_id)) stop("Invalid KEGG pathway ID format.")
   if (!is.character(organism) || length(organism) != 1) stop("organism must be a single character string")
   organism <- to_organism_kegg(organism)
-  
-  bfc <- BiocFileCache::BiocFileCache()
-  
+
+  path <- tempfile()
+  bfc_kegg <- BiocFileCache(cache = file.path(path, "kegg_maps"), ask = FALSE)
+  bfc_map <- BiocFileCache(cache = file.path(path, "mappings"), ask = FALSE)
+
   # --- 1. Download KGML ---
-  kgml_file <- download_kgml(path_id)
+  kgml_file <- download_kgml(path_id, bfc_kegg)
   if (is.null(kgml_file)) {
     warning("Failed to download KGML file for pathway ID: ", path_id)
     return(NULL)
@@ -38,21 +39,19 @@ kegg_to_graph <- function(path_id,
   # --- 3. Style nodes and edges ---
   nodes_df <- style_nodes(nodes_df)
   nodes_df <- add_gene_names(nodes_df)
-  nodes_df <- add_compound_names(nodes_df, bfc)
+  nodes_df <- add_compound_names(nodes_df, bfc_map)
   nodes_df <- scale_dimensions(nodes_df, factor = scaling_factor)
   nodes_df <- add_tooltip(nodes_df)
 
   edges_df <- style_edges(edges_df)
 
   # --- 4. Map DE results if provided ---
-  if (!is.null(de_results)) {
-    nodes_df <- map_results_to_nodes(nodes_df, de_results)
-  }
+  nodes_df <- map_results_to_nodes(nodes_df, de_results)
 
   # --- 5. Build pathway name ---
   pathway_name <- paste0("(", path_id, ") ", get_pathway_name(path_id))
 
-  # --- 6. Build output ---
+  # # --- 6. Build output ---
   if (return_type == "igraph") {
     igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
   } else if (return_type == "visNetwork") {
@@ -70,44 +69,7 @@ kegg_to_graph <- function(path_id,
 #' @param de_results Named list of DE results.
 #' @return Nodes data frame with mapped results and colors.
 map_results_to_nodes <- function(nodes_df, de_results) {
-
-  # --- 1. Convert single data.frame to default named list ---
-  if (inherits(de_results, "data.frame")) {
-    warning("Using defaults. For personalization, use a named list of DE results.")
-    de_results <- list(
-      de_input = list(
-        de_table = de_results,
-        value_column = "log2FoldChange",
-        feature_column = "KEGG_ids"
-      )
-    )
-  }
-
-  # --- 2. Validate named list ---
-  if (!is.list(de_results) || is.null(names(de_results)) || any(names(de_results) == "")) {
-    warning("de_results must be a named list or NULL. Ignoring DE results.")
-    return(nodes_df)
-  }
-
-  # --- 3. Keep only valid entries ---
-  valid_entries <- vapply(names(de_results),
-                          function(name) check_de_entry(de_results[[name]], name),
-                          logical(1))
-  de_results <- de_results[valid_entries]
-
-  if (length(de_results) == 0) return(nodes_df)
-
-  # --- 4. Combine DE results and map to nodes ---
-  results_combined <- combine_results_in_dataframe(de_results)
-  nodes_df <- add_results_nodes(nodes_df, results_combined)
-  nodes_df <- add_colors_to_nodes(nodes_df)
-  nodes_df <- add_tooltip(nodes_df)
-
-  nodes_df
-}
-
-
-map_results_to_nodes <- function() {
+  message("Mapping differential expression results to nodes...")
 
   # Validate each entry in de_results
   if (!is.null(de_results)) {
@@ -130,24 +92,31 @@ map_results_to_nodes <- function() {
     # Keep only valid entries
     de_results <- de_results[vapply(names(de_results), function(name) check_de_entry(de_results[[name]], name), logical(1))]
   }
-    # --- 4. Map DE results to nodes ---
+
+  if (is.null(de_results) || length(de_results) == 0) {
+    return(nodes_df)
+  }
+
+  # --- 4. Map DE results to nodes ---
   results_combined <- combine_results_in_dataframe(de_results)
   nodes_df <- add_results_nodes(nodes_df, results_combined)
   nodes_df <- add_colors_to_nodes(nodes_df)
 
   # --- 2. Color and style nodes and edges ---
   nodes_df <- add_tooltip(nodes_df)
-
+  
   # --- 5. Build ---
-  if (return_type == "igraph") {
-    kegg_igraph <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
-    return(kegg_igraph)
-  } else if (return_type == "visNetwork") {
-    return(
-      visNetwork::visNetwork(nodes_df, edges_df, main = pathway_name) %>%
-        visNetwork::visPhysics(enabled = FALSE)
-    )
-  }
+  return(nodes_df)
+
+  # if (return_type == "igraph") {
+  #   kegg_igraph <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
+  #   return(kegg_igraph)
+  # } else if (return_type == "visNetwork") {
+  #   return(
+  #     visNetwork::visNetwork(nodes_df, edges_df, main = pathway_name) %>%
+  #       visNetwork::visPhysics(enabled = FALSE)
+  #   )
+  # }
 }
 
 
@@ -165,18 +134,17 @@ scale_dimensions <- function(nodes_df, factor = 2) {
 }
 
 #' Add tooltips to nodes for visNetwork visualization.
-#' @param nodes_df Data frame of nodes with columns: KEGG, node_name, source, value.
+#' @param nodes_df Data frame of nodes with columns: KEGG, label, source, value.
 #' @return nodes_df with added 'title' column for tooltips.
 #' @details The tooltip includes a button to the specific KEGG entry page. If multiple KEGG IDs are present, they are concatenated with '+' in the URL. It also adds information about the node name, source of differential expression data, and value.
 add_tooltip <- function(nodes_df) {
-
   base_link <- "https://www.kegg.jp/entry/"
 
   button_html <- ifelse(
-    is.na(nodes_df$KEGG) | nodes_df$KEGG == "",
+    is.na(nodes_df$name) | nodes_df$name == "",
     "",
     paste0(
-      '<a href="', base_link, gsub(", ", "+", nodes_df$KEGG),
+      '<a href="', base_link, gsub(" ", "+", nodes_df$name),
       '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">',
       '<button type="button">KEGG entry</button></a><br>'
     )
@@ -185,7 +153,7 @@ add_tooltip <- function(nodes_df) {
   # Ensure no "NA" strings in tooltip
   safe <- function(x) ifelse(is.na(x), "", as.character(x))
   nodes_df$title <- paste0(
-    "Name: ", safe(nodes_df$node_name), "<br>",
+    "Name: ", safe(nodes_df$name), "<br>",
     "Source: ", safe(nodes_df$source), "<br>",
     "Value: ", safe(nodes_df$value), "<br>",
     button_html
@@ -197,7 +165,7 @@ add_tooltip <- function(nodes_df) {
 style_nodes <- function(nodes_df, node_size_multiplier = 1.2) {
   # Base visual settings
 
-  nodes_df$fixed <- TRUE 
+  nodes_df$fixed <- TRUE
 
   nodes_df$shape <- ifelse(nodes_df$type == "compound", "dot", "box")
 
@@ -207,6 +175,7 @@ style_nodes <- function(nodes_df, node_size_multiplier = 1.2) {
   nodes_df$widthConstraint <- NA_real_
   nodes_df$heightConstraint <- NA_real_
   non_comp_idx <- which(!is.na(nodes_df$type) & nodes_df$type != "compound")
+
   if (length(non_comp_idx) > 0) {
     nodes_df$widthConstraint[non_comp_idx] <- widths_num[non_comp_idx]
     nodes_df$heightConstraint[non_comp_idx] <- heights_num[non_comp_idx]
@@ -260,51 +229,48 @@ style_edges <- function(edges_df) {
 #' @param results_combined Data frame with combined results containing columns: KEGG, value, source
 #' @return Updated nodes data frame with added columns: value, color, source, text
 add_results_nodes <- function(nodes_df, results_combined) {
-   nodes_df[, c("value", "color", "source")] <- NA # Initialize new columns
-   nodes_df$text <- ""
- 
-   # If results is empty then return the original df
-   if (is.null(results_combined)) {
-     return(nodes_df)
-   }
- 
-   # Iterate through nodes_df and results_combined to map values
-   # For each node iterate over all results_combined
-   for (i in seq_len(nrow(nodes_df))) {
-     for (j in seq_len(nrow(results_combined))) {
-       pattern <- results_combined$KEGG[j]
-       if (is.na(pattern) || pattern == "" || is.na(nodes_df$KEGG[i]) || nodes_df$KEGG[i] == "") next
-       # use fixed matching to avoid regex surprises
-       if (grepl(pattern, nodes_df$KEGG[i], fixed = TRUE)) { # KEGG ids match (substring)
-         # If no value assigned to the node, assign the one from results_combined
-         if (is.na(nodes_df$value[i])) {
-           nodes_df$value[i] <- results_combined$value[j]
-           nodes_df$source[i] <- results_combined$source[j]
-           # nodes_df$text[i] <- list()
-         } else { # If value warn
-           warning(paste0("Multiple results mapped to node ", nodes_df$KEGG[i], ". Keeping the first occurrence to color the node."))
-         }
- 
-         # This will be added in any case
-         sep <- ","
-         nodes_df$text[i] <- paste0(
-           nodes_df$text[i],
-           "Source: ", results_combined$source[j], sep,
-           "Value: ", results_combined$value[j], sep,
-           "Id: ", results_combined$KEGG[j], ";"
-         )
-       }
-     }
-   }
- 
-   return(nodes_df)
+
+  # If results is empty then return the original df
+  if (is.null(results_combined)) {
+    return(nodes_df)
+  }
+
+  # Iterate through nodes_df and results_combined to map values
+  # For each node iterate over all results_combined
+  for (i in seq_len(nrow(nodes_df))) {
+    for (j in seq_len(nrow(results_combined))) {
+      pattern <- results_combined$KEGG[j]
+      if (is.na(pattern) || pattern == "" || is.na(nodes_df$KEGG[i]) || nodes_df$KEGG[i] == "") next
+      node_ids <- strsplit(nodes_df$KEGG[i], ";", fixed = TRUE)[[1]]
+      if (pattern %in% node_ids) { # KEGG ids match (substring)
+        # If no value assigned to the node, assign the one from results_combined
+        if (is.na(nodes_df$value[i])) {
+          nodes_df$value[i] <- results_combined$value[j]
+          nodes_df$source[i] <- results_combined$source[j]
+          # nodes_df$text[i] <- list()
+        } else { # If value warn
+          warning(paste0("Multiple results mapped to node ", nodes_df$KEGG[i], ". Keeping the first occurrence to color the node."))
+        }
+
+        # This will be added in any case
+        sep <- ","
+        nodes_df$text[i] <- paste0(
+          nodes_df$text[i],
+          "Source: ", results_combined$source[j], sep,
+          "Value: ", results_combined$value[j], sep,
+          "Id: ", results_combined$KEGG[j], ";"
+        )
+      }
+    }
+  }
+
+  return(nodes_df)
 }
 
 #' Combine multiple differential expression results into a single data frame
 #' @param results_list A named list where each element is a differential expression result containing a data frame (de_table), value column name (value_column), and feature column name (feature_column)
 #' @return A combined data frame with columns: KEGG, value, source
 combine_results_in_dataframe <- function(results_list) {
-
   # If no results provided, return NULL
   if (is.null(results_list) || length(results_list) == 0) {
     return(NULL)
@@ -337,9 +303,9 @@ combine_results_in_dataframe <- function(results_list) {
 #' @importFrom RColorBrewer brewer.pal
 add_colors_to_nodes <- function(nodes_df) {
   palettes <- c(
-    "RdGy",
     "RdBu",
     "PuOr",
+    "RdGy",
     "PRGn",
     "PiYG",
     "BrBG"
@@ -391,32 +357,43 @@ add_colors_to_nodes <- function(nodes_df) {
 #'
 #' @importFrom xml2 read_xml
 #' @importFrom httr GET http_error content status_code
-download_kgml <- function(pathway_id, cache_dir = "kgml_cache") {
-  # Ensure cache dir exists
-  if (!dir.exists(cache_dir)) {
-    dir.create(cache_dir, recursive = TRUE)
+#' @importFrom BiocFileCache BiocFileCache bfcquery bfcpath bfcnew
+download_kgml <- function(pathway_id, bfc) {
+  # cache key / name
+  rname <- paste0(pathway_id, ".xml")
+
+  # Check cache
+  qr <- bfcquery(bfc, rname, field = "rname")
+
+  if (nrow(qr) > 0) {
+    message("Using cached KEGG KGML for ", pathway_id)
+    return(bfcpath(bfc, qr$rid[1]))
   }
 
-  # Local file path
-  file_path <- file.path(cache_dir, paste0(pathway_id, ".xml"))
+  # If not cached, download
+  message("Downloading KGML for ", pathway_id, "...")
 
-  # If already cached, return path
-  if (file.exists(file_path)) {
-    message("Using cached file: ", file_path)
-    return(file_path)
-  }
-
-  # KEGG REST API URL
   url <- paste0("https://rest.kegg.jp/get/", pathway_id, "/kgml")
 
-  # Download KGML file
+  # Function to get KGML content
   kgml_content <- get_kgml(url)
 
-  ifelse(!is.null(content), writeBin(kgml_content, file_path), return(NULL))
-  message("Downloaded and cached: ", file_path)
+  if (is.null(kgml_content)) {
+    warning("Failed to download KGML for ", pathway_id)
+    return(NULL)
+  }
 
-  return(file_path)
+  # create cache entry
+  dest <- bfcnew(bfc, rname = rname, ext = ".xml")
+
+  # write content
+  writeBin(kgml_content, dest)
+
+  message("Downloaded & cached: ", pathway_id)
+
+  return(dest)
 }
+
 
 #' Parse KEGG KGML files to extract relations (edges) data frame.
 #' @param file Path to the KGML XML file.
@@ -424,15 +401,16 @@ download_kgml <- function(pathway_id, cache_dir = "kgml_cache") {
 add_gene_names <- function(nodes_df) {
   # find rows that are genes (logical index)
   idx <- which(!is.na(nodes_df$type) & nodes_df$type == "gene")
-  if (length(idx) == 0) return(nodes_df)
+  if (length(idx) == 0) {
+    return(nodes_df)
+  }
 
-  # safe extraction of graphic_name, handle NA
-  graphic_names <- as.character(nodes_df$graphics_name)
-  graphic_names[is.na(graphic_names)] <- ""
-
-  labels <- gsub(",.*", "", graphic_names[idx])
+  # Extraction of graphic_name, handle NA
+  graphics_name <- as.character(nodes_df$graphics_name)
+  graphics_name[is.na(graphics_name)] <- "" # Na replaced by empty
+  labels <- gsub(",.*", "", graphics_name[idx]) # take first
   labels <- trimws(labels)
-  browser()
+
   nodes_df$label[idx] <- labels
   return(nodes_df)
 }
@@ -443,19 +421,27 @@ add_gene_names <- function(nodes_df) {
 #' @importFrom BiocFileCache BiocFileCache
 add_compound_names <- function(nodes_df, bfc) {
   idx <- which(!is.na(nodes_df$type) & nodes_df$type == "compound")
-  if (length(idx) == 0) return(nodes_df)
 
-  compounds_in_graph <- as.character(nodes_df$graphic_name)
+  if (length(idx) == 0) {
+    return(nodes_df)
+  }
+
+  compounds_in_graph <- as.character(nodes_df$graphics_name)
   compounds_in_graph[is.na(compounds_in_graph)] <- ""
   compounds_in_graph <- compounds_in_graph[idx]
 
-  compounds <- get_compounds(bfc) # expect named vector mapping KEGG id -> name
+  compounds <- get_kegg_compounds(bfc) # expect named vector mapping KEGG id -> name
 
   # safe lookup: if not found, use original id or empty string
   labels <- vapply(compounds_in_graph, function(id) {
-    if (is.null(id) || id == "") return("")
-    val <- compounds[[id]]
-    if (is.null(val) || is.na(val)) return(id)
+    if (is.null(id) || id == "") {
+      return("")
+    }
+    val <- compounds[id]
+    if (is.null(val) || is.na(val)) {
+      return(id)
+    }
+    val <- gsub(";.*", "", val) # take first name before ';'
     return(as.character(val))
   }, character(1))
 

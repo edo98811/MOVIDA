@@ -42,3 +42,29 @@ check_de_entry <- function(de_entry, name) {
 
   return(TRUE)
 }
+
+check_valid_kgml <- function(file_path) {
+  # Try to read the XML file
+  xml_content <- tryCatch(
+    {
+      xml2::read_xml(file_path)
+    },
+    error = function(e) {
+      warning(paste("Failed to read KGML file:", file_path))
+      return(NULL)
+    }
+  )
+
+  if (is.null(xml_content)) {
+    return(FALSE)
+  }
+
+  # Check for the presence of the root 'pathway' node
+  root_node <- xml2::xml_find_first(xml_content, "/pathway")
+  if (is.na(root_node)) {
+    warning(paste("KGML file does not contain a valid 'pathway' root node:", file_path))
+    return(FALSE)
+  }
+
+  return(TRUE)
+}

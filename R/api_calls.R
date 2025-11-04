@@ -20,8 +20,9 @@ get_pathway_name <- function(id) {
 #' Download KEGG KGML file for a given pathway ID, with caching.
 #'
 #' @param pathway_id KEGG pathway ID (e.g., "hsa04110" or "04110").
-#'
+#' @param bfc A BiocFileCache object for caching.
 #' @return Content of the respose as text, or NULL if download failed.
+#' @importFrom httr GET http_error content status_code
 get_kgml <- function(url) {
   # Download
   resp <- httr::GET(url)
@@ -42,18 +43,18 @@ get_kgml <- function(url) {
 #' Get KEGG compounds with caching.
 #' @param bfc A BiocFileCache object for caching.
 #' @return A named character vector of KEGG compounds.
-#' @importFrom BiocFileCache bfcrid bfcadd bfcpath
+#' @importFrom BiocFileCache BiocFileCache bfcquery bfcpath bfcnew
 #' @importFrom KEGGREST keggList
-get_compounds <- function(bfc) {
+get_kegg_compounds <- function(bfc) {
+
+  cache_name <- "kegg_compounds.rds"
 
   # Check if cache exists
-  cache_key <- "kegg_compound_cache"
-  rid <- bfcrid(bfc, cache_key)
+  qr <- bfcquery(bfc, cache_name, field = "rname")
 
-  # If cached, load from cache
-  if (length(rid) > 0) {
+  if (nrow(qr) > 0) {
     message("Loading KEGG compounds from cache...")
-    compounds <- readRDS(bfcpath(bfc, rid))
+    compounds <- readRDS(bfcpath(bfc, qr$rid[1]))
     return(compounds)
   }
 
@@ -62,8 +63,8 @@ get_compounds <- function(bfc) {
   kegg_compounds <- KEGGREST::keggList("compound")
 
   # Save to cache
-  rid <- bfcadd(bfc, cache_key, file = tempfile(fileext = ".rds"))
-  saveRDS(kegg_compounds, bfcpath(bfc, rid))
+  path <- bfcnew(bfc, rname = cache_name, ext = ".rds")
+  saveRDS(kegg_compounds, file = path)
 
   return(kegg_compounds)
 }

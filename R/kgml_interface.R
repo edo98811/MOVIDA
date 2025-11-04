@@ -70,7 +70,7 @@ parse_kgml_entries <- function(file) {
     height = xml_attr(graphics, "height"),
     value = NA,
     source = NA_character_,
-    color = NA_character_,
+    color = xml_attr(graphics, "bgcolor"),
     text = NA_character_
   )
   # Example entry:
