@@ -1,5 +1,6 @@
 human_genes <- c("hsa:5594", "hsa:5894", "hsa:5604", "hsa:2002")
 compounds_1 <- c("C00002", "C00008", "C00076")
+compounds_1 <- c("C00002", "C00008", "C00076", "C99999")
 compounds_2 <- c("C00022")
 compounds_3 <- c("C00076")
 
@@ -18,6 +19,11 @@ res_metabo_2 <- data.frame(
 res_metabo_3 <- data.frame(
   KEGG_ids = compounds_3,
   log2FoldChange = rnorm(length(compounds_3), mean = 0, sd = 1)
+)
+
+res_metabo_wrong <- data.frame(
+  KEGG = compounds_1,
+  log2FC = rnorm(length(compounds_1), mean = 0, sd = 1)
 )
 
 de_results_list <- list(
