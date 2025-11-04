@@ -4,6 +4,8 @@ test_that("add_results_nodes correctly maps DE results onto nodes_df", {
   results_combined <- combine_results_in_dataframe(de_results_list)
   nodes_df$KEGG <- vapply(nodes_df$name, remove_kegg_prefix_str, FUN.VALUE = character(1))
 
+  nodes_df[, c("value", "color", "source", "text")] <- NA_character_
+
   # Run function
   mapped_nodes <- add_results_nodes(nodes_df, results_combined)
   expect_true(is.data.frame(mapped_nodes))
@@ -27,6 +29,8 @@ test_that("add_color_to_nodes assigns colors based on values", {
   nodes_df <- tibble::as_tibble(read.csv(nodes_df_path, sep = ";", colClasses = "character"))
   results_combined <- combine_results_in_dataframe(de_results_list)
   nodes_df$KEGG <- vapply(nodes_df$name, remove_kegg_prefix_str, FUN.VALUE = character(1))
+  nodes_df[, c("value", "color", "source", "text")] <- NA_character_
+
   nodes_df <- add_results_nodes(nodes_df, results_combined)
 
   # Run function
