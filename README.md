@@ -10,15 +10,12 @@ devtools::install_github("edoardofilippi/MOVIDA")
 ```
 ## Usage
 
+To use the Kegg pathway visualization function:
 ```R
-library("MOVIDA")
-
-movida_list <- list(
-  dde_metabo = dde,
-  organsim = "Mm"
-)
-
-MovidaApp(movida_list)
+library(MOVIDA)
+pathway <- "hsa04110"  # Example pathway ID
+graph <- kegg_to_graph(pathway, organism = "hsa", return_type = "visNetwork")
+graph
 ```
 
 
