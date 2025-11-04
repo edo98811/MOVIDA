@@ -110,6 +110,8 @@ res_macrophage_IFNg_vs_naive_limma <- topTable(
   confint = TRUE
 )
 
+res_macrophage_IFNg_vs_naive_limma$ENTREZID <- anns$ENTREZID[match(rownames(res_macrophage_IFNg_vs_naive_limma), anns$ENSEMBL)]
+
 # Enrichment analysis ----------------------------------------------------------
 de_entrez_IFNg_vs_naive_genes <- anns_entrez$ENTREZID[
   (!is.na(res_macrophage_IFNg_vs_naive_dds$padj)) &
@@ -132,8 +134,8 @@ save(dds, res_enrich_IFNg_vs_naive_dds, res_macrophage_IFNg_vs_naive_dds, res_ma
 
 de_results_list <-list(
   trans_limma = list(
-    de_table = res_macrophage_IFNg_vs_naive_limma,
-    value_column = "log2FoldChange",
+    de_table = data.frame(res_macrophage_IFNg_vs_naive_limma),
+    value_column = "logFC",
     feature_column = "ENTREZID"
   ),
   trans_deseq = list(
