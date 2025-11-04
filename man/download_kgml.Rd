@@ -4,7 +4,7 @@
 \alias{download_kgml}
 \title{Download and cache KEGG KGML files.}
 \usage{
-download_kgml(pathway_id, cache_dir = "kgml_cache")
+download_kgml(pathway_id, bfc)
 }
 \arguments{
 \item{pathway_id}{KEGG pathway ID (e.g., "hsa04110").}

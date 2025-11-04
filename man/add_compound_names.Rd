@@ -4,7 +4,7 @@
 \alias{add_compound_names}
 \title{Add compound names to compound nodes in the nodes data frame.}
 \usage{
-add_compound_names(nodes_df)
+add_compound_names(nodes_df, bfc)
 }
 \arguments{
 \item{nodes_df}{Data frame of nodes with a column 'type' indicating node type}

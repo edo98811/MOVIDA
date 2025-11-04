@@ -2,7 +2,7 @@
 % Please edit documentation in R/ggkegg_to_visnetwork.R
 \name{kegg_to_graph}
 \alias{kegg_to_graph}
-\title{Transform a ggkegg graph to a visNetwork object.}
+\title{Transform a ggkegg graph to igraph or visNetwork}
 \usage{
 kegg_to_graph(
   path_id,
@@ -18,10 +18,14 @@ kegg_to_graph(
 \item{organism}{KEGG organism code (e.g., "hsa" for human, "mmu" for mouse).}
 
 \item{de_results}{Named list of differential expression results. Each entry should be a list with elements: de_table (data.frame), value_column (character), feature_column (character), threshold (numeric).}
+
+\item{return_type}{Output type: "igraph" or "visNetwork".}
+
+\item{scaling_factor}{Numeric factor to scale node sizes.}
 }
 \value{
-A visNetwork object representing the pathway with colored nodes based on differential expression results.
+An igraph or visNetwork object representing the pathway.
 }
 \description{
-Transform a ggkegg graph to a visNetwork object.
+Transform a ggkegg graph to igraph or visNetwork
 }
