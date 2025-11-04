@@ -151,14 +151,7 @@ pathway <- rownames(res_enrich_IFNg_vs_naive_dds)[1]
 ```
 
 ```{r use-package}
-devtools::load_all()
 graph <- kegg_to_graph(pathway, organism = "hsa", de_results = de_results_list, return_type = "visNetwork", scaling_factor = 2.5)
 graph
-```
-
-```{r, eval = F}
-library(pathview)
-data(gse16873.d)
-pv_out <- pathview(gene.data = gse16873.d[, 1], pathway.id = "04110", species = "hsa")
 ```
 
