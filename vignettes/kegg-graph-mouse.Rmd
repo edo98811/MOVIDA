@@ -1,0 +1,79 @@
+---
+title: "kegg-graph"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{kegg-graph}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MOVIDA)
+```
+
+
+```{r load-fake-DE}
+# Mouse MAPK signaling pathway genes
+mouse_genes <- list("Mapk1", "Mapk3", "Raf1", "Map2k1", "Elk1")
+```
+
+```{r adapt-DE}
+# Mouse MAPK signaling pathway genes
+
+```
+
+
+```{r use-package}
+
+de_results_list = list(
+  # trans = list(
+  #   de_table = transcriptomics_res, 
+  #   value_column = "log2FoldChange", 
+  #   feature_column = "KEGGID", 
+  #   threshold = 0.2),
+  # prot = list(
+  #   de_table = proteomics_res, 
+  #   value_column = "logFC", 
+  #   feature_column = "KEGGID", 
+  #   threshold = 0.2),
+  metabo = list(
+    de_table = metabolomics_res, 
+    value_column = "log2FoldChange", 
+    feature_column = "rownames", 
+    threshold = 0.2)
+  )
+
+ggkegg_to_igraph("hsa04010", organism = "hsa")
+```
+
+```{r use-package-human}
+
+de_results_list = list(
+  # trans = list(
+  #   de_table = transcriptomics_res, 
+  #   value_column = "log2FoldChange", 
+  #   feature_column = "KEGGID", 
+  #   threshold = 0.2),
+  # prot = list(
+  #   de_table = proteomics_res, 
+  #   value_column = "logFC", 
+  #   feature_column = "KEGGID", 
+  #   threshold = 0.2),
+  metabo = list(
+    de_table = metabolomics_res, 
+    value_column = "log2FoldChange", 
+    feature_column = "rownames", 
+    threshold = 0.2)
+  )
+
+ggkegg_to_igraph("mmu04010", organism = "hsa")
+```
+
+

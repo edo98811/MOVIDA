@@ -16,9 +16,13 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r}
+library("MOVIDA")
+```
+
 ```{r load-fake-results}
 message("--- Loading packages...")
-library("MOVIDA")
+
 suppressPackageStartupMessages({
   library("macrophage")
   library("DESeq2")
@@ -29,8 +33,6 @@ suppressPackageStartupMessages({
   library("edgeR")
 })
 message("- Done!")
-
-message("--- Generating objects for the testing setup...")
 
 # Load the macrophage dataset ---------------------------------------------------
 data(gse)
@@ -57,7 +59,6 @@ contrast.matrix <- makeContrasts(
 dge <- DGEList(assay(gse))
 dge <- calcNormFactors(dge)
 
-# Filter low-expression genes
 cutoff <- 1
 drop <- which(apply(cpm(dge), 1, max) < cutoff)
 dge <- dge[-drop, ]
@@ -68,17 +69,6 @@ fit2 <- contrasts.fit(fit, contrast.matrix)
 fit2 <- eBayes(fit2)  # Empirical Bayes moderation
 
 # Gene annotation ---------------------------------------------------------------
-# anns <- data.frame(
-#   gene_id = rownames(dds),
-#   gene_name = mapIds(
-#     org.Hs.eg.db,
-#     keys = rownames(dds),
-#     column = "SYMBOL",
-#     keytype = "ENSEMBL"
-#   ),
-#   stringsAsFactors = FALSE,
-#   row.names = rownames(dds)
-# )
 
 anns <- AnnotationDbi::select(
   org.Hs.eg.db,
@@ -113,7 +103,7 @@ res_macrophage_IFNg_vs_naive_limma <- topTable(
 res_macrophage_IFNg_vs_naive_limma$ENTREZID <- anns$ENTREZID[match(rownames(res_macrophage_IFNg_vs_naive_limma), anns$ENSEMBL)]
 
 # Enrichment analysis ----------------------------------------------------------
-de_entrez_IFNg_vs_naive_genes <- anns_entrez$ENTREZID[
+de_entrez_IFNg_vs_naive_genes <- anns $ENTREZID[
   (!is.na(res_macrophage_IFNg_vs_naive_dds$padj)) &
     (res_macrophage_IFNg_vs_naive_dds$padj <= 0.05)
 ]
@@ -123,10 +113,6 @@ res_enrich_IFNg_vs_naive_dds <- enrichKEGG(
   organism = "hsa",
   pvalueCutoff = 0.05
 )@result
-
-
-# save-------------------------------------------------
-save(dds, res_enrich_IFNg_vs_naive_dds, res_macrophage_IFNg_vs_naive_dds, res_macrophage_IFNg_vs_naive_limma, fit2, anns, file = system.file("extdata", "quick_startup.RData", package="MOVIDA"))
 
 ```
 
@@ -146,11 +132,10 @@ de_results_list <-list(
 )
 
 pathway <- rownames(res_enrich_IFNg_vs_naive_dds)[1]
-
-
 ```
 
 ```{r use-package}
+devtools::load_all()
 graph <- kegg_to_graph(pathway, organism = "hsa", de_results = de_results_list, return_type = "visNetwork", scaling_factor = 2.5)
 graph
 ```
