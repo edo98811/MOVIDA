@@ -7,6 +7,8 @@
 #' @param scaling_factor Numeric factor to scale node sizes.
 #' @return An igraph or visNetwork object representing the pathway.
 #'
+#' @importFrom igraph graph_from_data_frame graph_attr
+#'
 #' @export
 kegg_to_graph <- function(path_id,
                           organism = "mmu",
@@ -34,7 +36,7 @@ kegg_to_graph <- function(path_id,
   edges_df <- parse_kgml_relations(kgml_file)
 
   # Extract KEGG IDs
-  nodes_df$KEGG <- vapply(nodes_df$name, remove_kegg_prefix_str, character(1))
+  nodes_df$KEGG <- vapply(nodes_df$kegg_name, remove_kegg_prefix_str, character(1))
 
   # --- 3. Style nodes and edges ---
   nodes_df <- style_nodes(nodes_df)
@@ -45,30 +47,25 @@ kegg_to_graph <- function(path_id,
 
   edges_df <- style_edges(edges_df)
 
-  # --- 4. Map DE results if provided ---
-  nodes_df <- map_results_to_nodes(nodes_df, de_results)
-
   # --- 5. Build pathway name ---
   pathway_name <- paste0("(", path_id, ") ", get_pathway_name(path_id))
 
-  # # --- 6. Build output ---
-  if (return_type == "igraph") {
-    igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
-  } else if (return_type == "visNetwork") {
-    visNetwork::visNetwork(nodes_df, edges_df, main = pathway_name) %>%
-      visNetwork::visPhysics(enabled = FALSE)
-  } else {
-    stop("Invalid return_type. Must be 'igraph' or 'visNetwork'.")
-  }
-}
+  g <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
+  igraph::graph_attr(g, "title") <- pathway_name
 
+  return(g)
+}
 
 #' Map differential expression results to nodes
 #'
-#' @param nodes_df Data frame of nodes from KGML.
-#' @param de_results Named list of DE results.
-#' @return Nodes data frame with mapped results and colors.
-map_results_to_nodes <- function(nodes_df, de_results) {
+#' @param g An igraph object representing the pathway.
+#' @param de_results Named list of differential expression results.
+#' @param return_type Output type: "igraph" or "visNetwork".
+#' @return An igraph or visNetwork object with mapped results.
+#' @importFrom visNetwork visIgraph visPhysics visLegend visOptions
+#' @importFrom igraph as_data_frame graph_from_data_frame graph_attr
+#' @export
+map_results_to_nodes <- function(g, de_results, return_type = "visNetwork") {
   message("Mapping differential expression results to nodes...")
 
   # Validate each entry in de_results
@@ -94,8 +91,12 @@ map_results_to_nodes <- function(nodes_df, de_results) {
   }
 
   if (is.null(de_results) || length(de_results) == 0) {
-    return(nodes_df)
+    return(g)
   }
+
+  nodes_df <- igraph::as_data_frame(g, what = "vertices")
+  edges_df <- igraph::as_data_frame(g, what = "edges")
+  pathway_name <- igraph::graph_attr(g, "title")
 
   # --- 4. Map DE results to nodes ---
   results_combined <- combine_results_in_dataframe(de_results)
@@ -104,19 +105,26 @@ map_results_to_nodes <- function(nodes_df, de_results) {
 
   # --- 2. Color and style nodes and edges ---
   nodes_df <- add_tooltip(nodes_df)
+
+  g <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
+  igraph::graph_attr(g, "title") <- pathway_name
   
   # --- 5. Build ---
-  return(nodes_df)
+  result <- switch(return_type,
+    igraph = {
+      g
+    },
+    visNetwork = {
+      visNetwork::visIgraph(g, idToLabel = FALSE) %>%
+        visNetwork::visPhysics(enabled = FALSE) %>%
+        # visNetwork::visNodes(shape = nodes_df$shape_vis) %>%
+        visNetwork::visLegend(main = pathway_name, position = "left", zoom = FALSE) %>%
+        visNetwork::visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE)
+    },
+    stop("Invalid return_type. Must be 'igraph' or 'visNetwork'.")
+  )
 
-  # if (return_type == "igraph") {
-  #   kegg_igraph <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
-  #   return(kegg_igraph)
-  # } else if (return_type == "visNetwork") {
-  #   return(
-  #     visNetwork::visNetwork(nodes_df, edges_df, main = pathway_name) %>%
-  #       visNetwork::visPhysics(enabled = FALSE)
-  #   )
-  # }
+  return(result)
 }
 
 
@@ -141,10 +149,10 @@ add_tooltip <- function(nodes_df) {
   base_link <- "https://www.kegg.jp/entry/"
 
   button_html <- ifelse(
-    is.na(nodes_df$name) | nodes_df$name == "",
+    is.na(nodes_df$kegg_name) | nodes_df$kegg_name == "",
     "",
     paste0(
-      '<a href="', base_link, gsub(" ", "+", nodes_df$name),
+      '<a href="', base_link, gsub(" ", "+", nodes_df$kegg_name),
       '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">',
       '<button type="button">KEGG entry</button></a><br>'
     )
@@ -153,7 +161,7 @@ add_tooltip <- function(nodes_df) {
   # Ensure no "NA" strings in tooltip
   safe <- function(x) ifelse(is.na(x), "", as.character(x))
   nodes_df$title <- paste0(
-    "Name: ", safe(nodes_df$name), "<br>",
+    "Name: ", safe(nodes_df$kegg_name), "<br>",
     "Source: ", safe(nodes_df$source), "<br>",
     "Value: ", safe(nodes_df$value), "<br>",
     button_html
@@ -167,6 +175,7 @@ style_nodes <- function(nodes_df, node_size_multiplier = 1.2) {
 
   nodes_df$fixed <- TRUE
 
+  # nodes_df$shape <- ifelse(nodes_df$type == "compound", "dot", "rectangle")
   nodes_df$shape <- ifelse(nodes_df$type == "compound", "dot", "box")
 
   # Set size constraints for non-compound nodes (compute numeric vectors first)
@@ -174,6 +183,7 @@ style_nodes <- function(nodes_df, node_size_multiplier = 1.2) {
   heights_num <- as.numeric(nodes_df$height) * node_size_multiplier
   nodes_df$widthConstraint <- NA_real_
   nodes_df$heightConstraint <- NA_real_
+  nodes_df$size <- NA_real_
   non_comp_idx <- which(!is.na(nodes_df$type) & nodes_df$type != "compound")
 
   if (length(non_comp_idx) > 0) {
@@ -182,12 +192,15 @@ style_nodes <- function(nodes_df, node_size_multiplier = 1.2) {
   }
 
   # Group nodes set dimension to one (very small)
-  undef_idx <- which(!is.na(nodes_df$name) & nodes_df$name == "undefined")
+  undef_idx <- which(!is.na(nodes_df$kegg_name) & nodes_df$kegg_name == "undefined")
   if (length(undef_idx) > 0) {
     nodes_df$widthConstraint[undef_idx] <- 1
     nodes_df$heightConstraint[undef_idx] <- 1
   }
-
+  dot_idx <- which(nodes_df$shape == "dot")
+  if (length(dot_idx) > 0) {
+    nodes_df$size[dot_idx] <- 7
+  }
   return(nodes_df)
 }
 
@@ -229,7 +242,6 @@ style_edges <- function(edges_df) {
 #' @param results_combined Data frame with combined results containing columns: KEGG, value, source
 #' @return Updated nodes data frame with added columns: value, color, source, text
 add_results_nodes <- function(nodes_df, results_combined) {
-
   # If results is empty then return the original df
   if (is.null(results_combined)) {
     return(nodes_df)
@@ -249,7 +261,7 @@ add_results_nodes <- function(nodes_df, results_combined) {
           nodes_df$source[i] <- results_combined$source[j]
           # nodes_df$text[i] <- list()
         } else { # If value warn
-          warning(paste0("Multiple results mapped to node ", nodes_df$KEGG[i], ". Keeping the first occurrence to color the node."))
+          warning(paste0("Multiple results mapped to node ", nodes_df$kegg_name[i], ". Keeping the first occurrence to color the node."))
         }
 
         # This will be added in any case
