@@ -31,7 +31,7 @@ expand_keggs <- function(kegg_df) {
     # Remove the prefix before ":" in each KEGG ID
     split_ids <- sub(".*:", "", split_ids)
     # Append the row ids and KEGG IDs
-    ids_out <- c(ids_out, rep(kegg_df$id[i], length(split_ids)))
+    ids_out <- c(ids_out, rep(kegg_df$name[i], length(split_ids)))
     kegg_out <- c(kegg_out, split_ids)
   }
 
