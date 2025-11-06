@@ -22,7 +22,7 @@ parse_kgml_relations <- function(file) {
         to = entry2,
         type = type,
         subtype = NA_character_,
-        value = NA_character_
+        rel_value = NA_character_ # value controls the vidth of edges
       )
     } else {
       tibble(
@@ -30,7 +30,7 @@ parse_kgml_relations <- function(file) {
         to = entry2,
         type = type,
         subtype = xml_attr(subnodes, "name"),
-        value = xml_attr(subnodes, "value")
+        rel_value = xml_attr(subnodes, "value")
       )
     }
   })
@@ -64,8 +64,8 @@ parse_kgml_entries <- function(file) {
     # if no graphics, create a single row with NAs
     if (length(graphics_nodes) == 0) {
       tibble(
-        id = entry_id,
-        name = entry_name,
+        name = entry_id,
+        kegg_name = entry_name,
         type = entry_type,
         link = entry_link,
         reaction = entry_reaction,
@@ -86,8 +86,8 @@ parse_kgml_entries <- function(file) {
     } else {
       purrr::map_dfr(graphics_nodes, function(g) {
         tibble(
-          id = entry_id,
-          name = entry_name,
+          name = entry_id,
+          kegg_name = entry_name,
           type = entry_type,
           link = entry_link,
           reaction = entry_reaction,
