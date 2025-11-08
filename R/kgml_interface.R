@@ -78,10 +78,10 @@ parse_kgml_entries <- function(file) {
         y = NA_character_,
         width = NA_character_,
         height = NA_character_,
-        value = NA,
+        value = NA_real_,
         source = NA_character_,
         color = NA_character_,
-        text = NA_character_
+        text = ""
       )
     } else {
       purrr::map_dfr(graphics_nodes, function(g) {
@@ -100,10 +100,10 @@ parse_kgml_entries <- function(file) {
           y = xml_attr(g, "y"),
           width = xml_attr(g, "width"),
           height = xml_attr(g, "height"),
-          value = NA,
+          value = NA_real_,
           source = NA_character_,
           color = xml_attr(g, "bgcolor"),
-          text = NA_character_
+          text = ""
         )
       })
     }
