@@ -169,7 +169,10 @@ add_tooltip <- function(nodes_df) {
   return(nodes_df)
 }
 
-
+#' Style nodes based on their type for visNetwork visualization.
+#' @param nodes_df Data frame of nodes with a column 'type'.
+#' @param node_size_multiplier Numeric factor to scale node sizes (default: 1.2).
+#' @return nodes_df with added visual styling columns: shape, fixed, widthConstraint, heightConstraint, size.
 style_nodes <- function(nodes_df, node_size_multiplier = 1.2) {
   # Base visual settings
 
@@ -205,6 +208,9 @@ style_nodes <- function(nodes_df, node_size_multiplier = 1.2) {
 }
 
 
+#' Style edges based on their subtype for visNetwork visualization.
+#' @param edges_df Data frame of edges with a column 'subtype'.
+#' @return edges_df with added visual styling columns: color, dashes, arrows, label.
 style_edges <- function(edges_df) {
   edge_style_map <- list(
     compound = list(color = "black", dashes = FALSE, arrows = "to", label = ""),
@@ -254,6 +260,7 @@ add_results_nodes <- function(nodes_df, results_combined) {
       pattern <- results_combined$KEGG[j]
       if (is.na(pattern) || pattern == "" || is.na(nodes_df$KEGG[i]) || nodes_df$KEGG[i] == "") next
       node_ids <- strsplit(nodes_df$KEGG[i], ";", fixed = TRUE)[[1]]
+
       if (pattern %in% node_ids) { # KEGG ids match (substring)
         # If no value assigned to the node, assign the one from results_combined
         if (is.na(nodes_df$value[i])) {
