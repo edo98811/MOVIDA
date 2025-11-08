@@ -4,15 +4,17 @@
 \alias{map_results_to_nodes}
 \title{Map differential expression results to nodes}
 \usage{
-map_results_to_nodes(nodes_df, de_results)
+map_results_to_nodes(g, de_results, return_type = "visNetwork")
 }
 \arguments{
-\item{nodes_df}{Data frame of nodes from KGML.}
+\item{g}{An igraph object representing the pathway.}
 
-\item{de_results}{Named list of DE results.}
+\item{de_results}{Named list of differential expression results.}
+
+\item{return_type}{Output type: "igraph" or "visNetwork".}
 }
 \value{
-Nodes data frame with mapped results and colors.
+An igraph or visNetwork object with mapped results.
 }
 \description{
 Map differential expression results to nodes
