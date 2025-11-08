@@ -120,7 +120,7 @@ res_enrich_IFNg_vs_naive_dds <- enrichKEGG(
 
 de_results_list <-list(
   trans_limma = list(
-    de_table = data.frame(res_macrophage_IFNg_vs_naive_limma),
+    de_table = data.frame(res_macrophage_IFNg_vs_naive_limma[]),
     value_column = "logFC",
     feature_column = "ENTREZID"
   ),
@@ -130,13 +130,21 @@ de_results_list <-list(
     feature_column = "ENTREZID"
     )
 )
-
-pathway <- rownames(res_enrich_IFNg_vs_naive_dds)[1]
+de_results_limma <-  data.frame(res_macrophage_IFNg_vs_naive_limma)[res_macrophage_IFNg_vs_naive_limma$adj.P.Val < 0.05, ]
+pathway <- rownames(res_enrich_IFNg_vs_naive_dds)[6]
 ```
 
 ```{r use-package}
 devtools::load_all()
-graph <- kegg_to_graph(pathway, organism = "hsa", de_results = de_results_list, return_type = "visNetwork", scaling_factor = 2.5)
+graph <- kegg_to_graph(pathway, scaling_factor = 2.5)
+graph <- map_results_to_nodes(graph, de_results_list)
+graph
+```
+
+```{r use-package-2}
+devtools::load_all()
+graph <- kegg_to_graph(pathway, scaling_factor = 2.5)
+graph <- map_results_to_nodes(graph, de_results_limma)
 graph
 ```
 
