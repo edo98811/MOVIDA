@@ -1,47 +1,148 @@
-test_that("add_results_nodes correctly maps DE results onto nodes_df", {
-  # Capture warnings to test multiple-match behavior later
+# test_that("add_results_nodes correctly maps DE results onto nodes_df", {
+#   # Capture warnings to test multiple-match behavior later
+#   nodes_df <- tibble::as_tibble(read.csv(nodes_df_path, sep = ";", colClasses = "character"))
+#   results_combined <- combine_results_in_dataframe(de_results_list)
+#   nodes_df$KEGG <- vapply(nodes_df$kegg_name, remove_kegg_prefix_str, FUN.VALUE = character(1))
+
+#   # Run function
+#   mapped_nodes <- add_results_nodes(nodes_df, results_combined)
+#   expect_true(is.data.frame(mapped_nodes))
+#   browser()
+#   # Check structure
+#   expect_true(is.data.frame(mapped_nodes))
+#   expect_true(all(c("value", "color", "source", "text") %in% colnames(mapped_nodes)))
+#   expect_equal(nrow(mapped_nodes), nrow(nodes_df))
+#   expect_false(all(is.na(mapped_nodes$value)))
+#   expect_false(all(is.na(mapped_nodes$source)))
+#   expect_false(all(is.na(mapped_nodes$text)))
+
+#   results_combined_double <- combine_results_in_dataframe(de_results_list_with_repetition)
+#   expect_warning(
+#     add_results_nodes(nodes_df, results_combined_double),
+#     "Multiple results mapped to node"
+#   )
+# })
+test_that("add_results_nodes correctly maps DE results onto nodes_df across all test lists", {
+  # Load node reference table
   nodes_df <- tibble::as_tibble(read.csv(nodes_df_path, sep = ";", colClasses = "character"))
-  results_combined <- combine_results_in_dataframe(de_results_list)
-  nodes_df$KEGG <- vapply(nodes_df$name, remove_kegg_prefix_str, FUN.VALUE = character(1))
+  nodes_df$KEGG <- vapply(nodes_df$kegg_name, remove_kegg_prefix_str, FUN.VALUE = character(1))
 
-  nodes_df[, c("value", "color", "source", "text")] <- NA_character_
+  # Iterate through each DE test list
+  purrr::imap(all_de_test_lists, function(de_list, test_name) {
+    message(glue::glue("🔍 Testing mapping for scenario: {test_name}"))
 
-  # Run function
-  mapped_nodes <- add_results_nodes(nodes_df, results_combined)
-  expect_true(is.data.frame(mapped_nodes))
+    # Combine all DE results into one table
+    results_combined <- combine_results_in_dataframe(de_list)
 
-  # Check structure
-  expect_true(is.data.frame(mapped_nodes))
-  expect_true(all(c("value", "color", "source", "text") %in% colnames(mapped_nodes)))
-  expect_equal(nrow(mapped_nodes), nrow(nodes_df))
-  expect_false(all(is.na(mapped_nodes$value)))
-  expect_false(all(is.na(mapped_nodes$source)))
-  expect_false(all(is.na(mapped_nodes$text)))
+    # --- Capture all warnings ---
+    warnings <- testthat::capture_warnings(
+      mapped_nodes <- add_results_nodes(nodes_df, results_combined) # expect warnign expects only one not multiple!!
+    )
 
-  results_combined_double <- combine_results_in_dataframe(de_results_list_with_repetition)
-  expect_warning(
-    add_results_nodes(nodes_df, results_combined_double),
-    "Multiple results mapped to node"
-  )
+    # --- Expected warning logic ---
+    if (test_name %in% names(expected_warnings)) {
+      exp_n <- expected_warnings[[test_name]]
+
+      # Count and content validation
+      expect_equal(length(warnings), exp_n,
+                   info = glue::glue("{test_name}: expected {exp_n} warnings, got {length(warnings)}"))
+      expect_true(any(grepl("Multiple results", warnings)) || any(grepl("mapped", warnings)),
+                  info = glue::glue("{test_name}: expected warning about mapping issues"))
+    } else {
+      # Should produce no warnings
+      expect_equal(length(warnings), 0,
+                   info = glue::glue("{test_name}: unexpected warnings found"))
+    }
+
+    # --- Structure checks ---
+    expect_true(is.data.frame(mapped_nodes), info = test_name)
+    expect_true(all(c("value", "color", "source", "text") %in% colnames(mapped_nodes)),
+      info = glue::glue("{test_name}: missing expected columns")
+    )
+    expect_equal(nrow(mapped_nodes), nrow(nodes_df),
+      info = glue::glue("{test_name}: wrong number of rows")
+    )
+
+    # --- Content checks ---
+    expect_false(all(is.na(mapped_nodes$value)), info = test_name)
+    expect_false(all(is.na(mapped_nodes$source)), info = test_name)
+    expect_false(all(is.na(mapped_nodes$text)), info = test_name)
+  })
 })
 
-test_that("add_color_to_nodes assigns colors based on values", {
-  nodes_df <- tibble::as_tibble(read.csv(nodes_df_path, sep = ";", colClasses = "character"))
-  results_combined <- combine_results_in_dataframe(de_results_list)
-  nodes_df$KEGG <- vapply(nodes_df$name, remove_kegg_prefix_str, FUN.VALUE = character(1))
-  nodes_df[, c("value", "color", "source", "text")] <- NA_character_
 
-  nodes_df <- add_results_nodes(nodes_df, results_combined)
+# test_that("add_color_to_nodes assigns colors based on values", {
+#   nodes_df <- tibble::as_tibble(read.csv(nodes_df_path, sep = ";", colClasses = "character"))
+#   results_combined <- combine_results_in_dataframe(de_results_list)
+#   nodes_df$KEGG <- vapply(nodes_df$kegg_name, remove_kegg_prefix_str, FUN.VALUE = character(1))
 
-  # Run function
-  nodes_df <- add_colors_to_nodes(nodes_df)
+#   nodes_df <- add_results_nodes(nodes_df, results_combined)
 
-  expect_true(is.data.frame(nodes_df))
-  expect_false(all(is.na(nodes_df$color)))
-  # Check non-NA colors are valid hex (#RRGGBB)
-  expect_true(all(grepl("^#([A-Fa-f0-9]{6})$", nodes_df$color[!is.na(nodes_df$color)])))
-  expect_equal(!is.na(nodes_df$value), !is.na(nodes_df$color))
+#   # Run function
+#   nodes_df <- add_colors_to_nodes(nodes_df)
+
+#   expect_true(is.data.frame(nodes_df))
+#   expect_false(all(is.na(nodes_df$color)))
+#   # Check non-NA colors are valid hex (#RRGGBB)
+#   expect_true(all(grepl("^#([A-Fa-f0-9]{6})$", nodes_df$color[!is.na(nodes_df$color)])))
+#   expect_equal(!is.na(nodes_df$value), !is.na(nodes_df$color))
+# })
+
+test_that("add_colors_to_nodes assigns colors based on values across all test lists", {
+  # Load the node reference table once
+  base_nodes_df <- tibble::as_tibble(read.csv(nodes_df_path, sep = ";", colClasses = "character"))
+  base_nodes_df$KEGG <- vapply(base_nodes_df$kegg_name, remove_kegg_prefix_str, FUN.VALUE = character(1))
+
+  purrr::imap(all_de_test_lists, function(de_list, test_name) {
+    message(glue::glue("🎨 Testing add_colors_to_nodes() for scenario: {test_name}"))
+
+    # Prepare combined results and map onto nodes
+    results_combined <- combine_results_in_dataframe(de_list)
+
+    # --- Capture all warnings ---
+    warnings <- testthat::capture_warnings(
+      mapped_nodes <- add_results_nodes(base_nodes_df, results_combined)
+    )
+
+    # --- Expected warning logic ---
+    if (test_name %in% names(expected_warnings)) {
+      exp_n <- expected_warnings[[test_name]]
+
+      # Count and content validation
+      expect_equal(length(warnings), exp_n,
+        info = glue::glue("{test_name}: expected {exp_n} warnings, got {length(warnings)}")
+      )
+      expect_true(any(grepl("Multiple results", warnings)) || any(grepl("mapped", warnings)),
+        info = glue::glue("{test_name}: expected warning about mapping issues")
+      )
+    } else {
+      # Should produce no warnings
+      expect_equal(length(warnings), 0,
+        info = glue::glue("{test_name}: unexpected warnings found")
+      )
+    }
+
+    # Apply color assignment
+    colored_nodes <- add_colors_to_nodes(mapped_nodes)
+
+    # --- Structural checks ---
+    expect_true(is.data.frame(colored_nodes), info = test_name)
+    expect_true("color" %in% colnames(colored_nodes),
+      info = glue::glue("{test_name}: missing 'color' column")
+    )
+
+    # --- Color validity checks ---
+    non_na_colors <- colored_nodes$color[!is.na(colored_nodes$color)]
+    expect_false(all(is.na(colored_nodes$color)), info = test_name)
+    expect_true(all(grepl("^#([A-Fa-f0-9]{6})$", non_na_colors)),
+      info = glue::glue("{test_name}: invalid color hex codes detected")
+    )
+
+    # --- Logical consistency ---
+    expect_equal(!is.na(colored_nodes$value), colored_nodes$color != "#FFFFFF")
+  })
 })
+
 
 test_that("known subtypes are styled correctly", {
   edges <- data.frame(

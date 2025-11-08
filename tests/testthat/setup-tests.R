@@ -1,80 +1,131 @@
-human_genes <- c("hsa:5594", "hsa:5894", "hsa:5604", "hsa:2002")
-compounds_1 <- c("C00002", "C00008", "C00076")
-compounds_1 <- c("C00002", "C00008", "C00076", "C99999")
-compounds_2 <- c("C00022")
-compounds_3 <- c("C00076")
+# existing nodes: 1111, 2222, 3333, K00001, tst00002, C00001, C00002, C00003
+# Existing genes and compounds (subset of the KGML)
+nodes_A <- c("1111", "C00001")
 
-res_genes <- data.frame(
-  KEGGID = human_genes,
-  log2FoldChange = rnorm(length(human_genes), mean = 0, sd = 1)
-)
-res_metabo_1 <- data.frame(
-  KEGG = compounds_1,
-  log2FC = rnorm(length(compounds_1), mean = 0, sd = 1)
-)
-res_metabo_2 <- data.frame(
-  KEGG_ids = compounds_2,
-  log2FoldChange = rnorm(length(compounds_2), mean = 0, sd = 1)
-)
-res_metabo_3 <- data.frame(
-  KEGG_ids = compounds_3,
-  log2FoldChange = rnorm(length(compounds_3), mean = 0, sd = 1)
-)
+# Includes some non-existing IDs (to test missing handling)
+nodes_B <- c("3333", "9999", "C00008", "K00001")
 
-res_metabo_wrong <- data.frame(
-  KEGG = compounds_1,
-  log2FC = rnorm(length(compounds_1), mean = 0, sd = 1)
-)
+# Duplicates within the same vector
+nodes_C <- c("1111", "1111", "C00003", "C00002", "C99999")
 
-de_results_list <- list(
-  trans = list(
-    de_table = res_genes,
-    value_column = "log2FoldChange",
-    feature_column = "KEGGID"
-  ),
-  metabo_1 = list(
-    de_table = res_metabo_1,
-    value_column = "log2FC",
-    feature_column = "KEGG"
-  ),
-  metabo_2 = list(
-    de_table = res_metabo_2,
-    value_column = "log2FoldChange",
-    feature_column = "KEGG_ids"
-  )
+# Mix of existing and new, with overlap across vectors
+nodes_D <- c("C00003", "C00008", "3333", "tst00002")
+
+# All compounds including a non-existent one
+nodes_compounds <- c("C00001", "C00002", "C00003", "C00123")
+
+
+nodes_A_df <- data.frame(
+  KEGGID = nodes_A,
+  log2FoldChange = rnorm(length(nodes_A), mean = 0, sd = 1)
+)
+nodes_B_df <- data.frame(
+  KEGG = nodes_B,
+  log2FC = rnorm(length(nodes_B), mean = 0, sd = 1)
+)
+nodes_C_df <- data.frame(
+  KEGG_ids = nodes_C,
+  log2FoldChange = rnorm(length(nodes_C), mean = 0, sd = 1)
+)
+nodes_D_df <- data.frame(
+  KEGG_ids = nodes_D,
+  log2FoldChange = rnorm(length(nodes_D), mean = 0, sd = 1)
+)
+nodes_compounds_df <- data.frame(
+  KEGG = nodes_compounds,
+  log2FC = rnorm(length(nodes_compounds), mean = 0, sd = 1)
 )
 
-de_results_list_with_repetition <- list(
+# --- EXAMPLE FAKE DE RESULTS LISTS ---
+
+# ✅ Basic case — two datasets, consistent and simple
+de_results_list_1 <- list(
   genes = list(
-    de_table = res_genes,
+    de_table = nodes_A_df,
     value_column = "log2FoldChange",
     feature_column = "KEGGID"
   ),
-  metabo_1 = list(
-    de_table = res_metabo_1,
+  metabolites = list(
+    de_table = nodes_B_df,
     value_column = "log2FC",
     feature_column = "KEGG"
-  ),
-  metabo_2 = list(
-    de_table = res_metabo_2,
+  )
+)
+
+# ⚠️ Mixed column names and redundant identifiers
+de_results_list_2 <- list(
+  transcr = list(
+    de_table = nodes_C_df,
     value_column = "log2FoldChange",
     feature_column = "KEGG_ids"
   ),
-  metabo_3 = list(
-    de_table = res_metabo_3,
+  proteins = list(
+    de_table = nodes_B_df,
+    value_column = "log2FC",
+    feature_column = "KEGG"
+  ),
+  metabolome = list(
+    de_table = nodes_compounds_df,
+    value_column = "log2FC",
+    feature_column = "KEGG"
+  )
+)
+
+# 🔁 Duplicates and cross-referenced names (e.g., same nodes across lists)
+de_results_list_3 <- list(
+  group1 = list(
+    de_table = nodes_D_df,
+    value_column = "log2FoldChange",
+    feature_column = "KEGG_ids"
+  ),
+  group2 = list(
+    de_table = nodes_C_df,
     value_column = "log2FoldChange",
     feature_column = "KEGG_ids"
   )
 )
 
-kgml_path <- system.file("extdata", "hsa04010.xml", package = "MOVIDA")
+# 🧪 Mixed types and random naming — stress test
+de_results_list_5 <- list(
+  transcriptomics = list(
+    de_table = nodes_A_df,
+    value_column = "log2FoldChange",
+    feature_column = "KEGGID"
+  ),
+  proteomics = list(
+    de_table = nodes_C_df,
+    value_column = "log2FoldChange",
+    feature_column = "KEGG_ids"
+  ),
+  metabolomics = list(
+    de_table = nodes_compounds_df,
+    value_column = "log2FC",
+    feature_column = "KEGG"
+  ),
+  weird_case = list(
+    de_table = nodes_B_df,
+    value_column = "log2FC",
+    feature_column = "KEGG"
+  )
+)
 
-nodes_df_path <- system.file("extdata", "hsa04010_nodes.csv", package = "MOVIDA")
-edges_df_path <- system.file("extdata", "hsa04010_edges.csv", package = "MOVIDA")
+all_de_test_lists <- list(
+  genes_metabolites     = de_results_list_1, # Basic and consistent
+  mixed_omics           = de_results_list_2, # Mixed omics, column name variations
+  duplicates_overlap    = de_results_list_3, # Duplicate / overlapping feature IDs
+  full_stress           = de_results_list_5  # Large mixed test case 
+)
 
-# kgml_path <- file.path("isnt", "extdata", "hsa04010.xml")
+throw_warning <- names(all_de_test_lists)[c(2,3,4)]
+expected_warnings <- setNames(c(2, 2, 4), throw_warning)
 
-# nodes_df_path <- file.path("isnt", "extdata", "hsa04010_nodes.csv")
-# edges_df_path <- file.path("isnt", "extdata", "hsa04010_edges.csv")
-#  path: hsa04010
-# write.table(nodes_df, "inst/extdata/hsa04010_nodes.csv",  sep = ";")
+kgml_path <- system.file("extdata", "test01.xml", package = "MOVIDA")
+
+# edges_df <- parse_kgml_relations(kgml_path)
+# write.table(edges_df, system.file("extdata", "test01.xml_edges.csv", package = "MOVIDA"),  sep = ";", row.names = FALSE)
+
+# nodes_df <- parse_kgml_entries(kgml_path)
+# write.table(nodes_df, system.file("extdata", "test01.xml_nodes.csv", package = "MOVIDA"),  sep = ";", row.names = FALSE)
+
+nodes_df_path <- system.file("extdata", "test01.xml_nodes.csv", package = "MOVIDA")
+edges_df_path <- system.file("extdata", "test01.xml_edges.csv", package = "MOVIDA")

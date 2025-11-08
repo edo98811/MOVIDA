@@ -2,11 +2,11 @@ library(mockery)
 
 test_that("expand_keggs handles multiple KEGG IDs correctly", {
   input <- data.frame(
-    id = c(1, 2, 3),
+    name = c(1, 2, 3),
     KEGG = c("hsa:1234;hsa:5678", "cpd:C00022", "ko:K00001;ko:K00002;ko:K00003"),
     stringsAsFactors = FALSE
   )
-  expected_output <- data.frame(id = c(1, 1, 2, 3, 3, 3), KEGG = c("1234", "5678", "C00022", "K00001", "K00002", "K00003"))
+  expected_output <- data.frame(name = c(1, 1, 2, 3, 3, 3), KEGG = c("1234", "5678", "C00022", "K00001", "K00002", "K00003"))
   actual_output <- expand_keggs(input)
   expect_equal(actual_output, expected_output)
 })
@@ -31,35 +31,67 @@ test_that("parse_kgml_entries load nodes correctly", {
   nodes_df <- parse_kgml_entries(kgml_path)
 
   nodes_df_expected <- tibble::as_tibble(read.csv(nodes_df_path, sep = ";", colClasses = "character"))
-  nodes_df <- nodes_df[, !(names(nodes_df) %in% c("color", "value", "text", "source")), drop = FALSE]
+  nodes_df_expected$value <- as.numeric(nodes_df_expected$value)
 
   expect_equal(nodes_df, nodes_df_expected)
 })
 
-test_that("combine_results_in_dataframe correctly merges DE results", {
-  # Run the function using your already-defined inputs
-  result <- combine_results_in_dataframe(de_results_list)
+# test_that("combine_results_in_dataframe correctly merges DE results", {
+#   # Run the function using your already-defined inputs
+#   result <- combine_results_in_dataframe(de_results_list)
 
-  # Check that result is a data frame
-  expect_true(is.data.frame(result))
+#   # Check that result is a data frame
+#   expect_true(is.data.frame(result))
 
-  # Check expected columns
-  expect_equal(colnames(result), c("KEGG", "value", "source"))
+#   # Check expected columns
+#   expect_equal(colnames(result), c("KEGG", "value", "source"))
 
-  # Check that 'source' column matches names of results_list
-  expect_setequal(unique(result$source), names(de_results_list))
+#   # Check that 'source' column matches names of results_list
+#   expect_setequal(unique(result$source), names(de_results_list))
 
-  # Check KEGG IDs no longer have the prefix (assuming remove_kegg_prefix removes 'path:')
-  expect_false(any(grepl("^hsa:", result$KEGG)))
+#   # Check KEGG IDs no longer have the prefix (assuming remove_kegg_prefix removes 'path:')
+#   expect_false(any(grepl("^hsa:", result$KEGG)))
 
-  # Check for non-missing values
-  expect_false(any(is.na(result$KEGG)))
-  expect_false(any(is.na(result$value)))
+#   # Check for non-missing values
+#   expect_false(any(is.na(result$KEGG)))
+#   expect_false(any(is.na(result$value)))
 
-  # Check that all entries from each source are included
-  expected_nrows <- sum(sapply(de_results_list, function(x) nrow(x$de_table)))
-  expect_equal(nrow(result), expected_nrows)
+#   # Check that all entries from each source are included
+#   expected_nrows <- sum(sapply(de_results_list, function(x) nrow(x$de_table)))
+#   expect_equal(nrow(result), expected_nrows)
+# })
+
+test_that("combine_results_in_dataframe correctly merges DE results across all test lists", {
+  purrr::imap(all_de_test_lists, function(de_list, test_name) {
+    message(glue::glue("🧩 Testing combine_results_in_dataframe() for scenario: {test_name}"))
+
+    # Run the function for this test list
+    result <- combine_results_in_dataframe(de_list)
+
+    # --- Structure checks ---
+    expect_true(is.data.frame(result), info = test_name)
+    expect_equal(colnames(result), c("KEGG", "value", "source"),
+                 info = glue::glue("{test_name}: unexpected column names"))
+
+    # --- Source tracking ---
+    expect_setequal(unique(result$source), names(de_list))
+
+    # --- KEGG ID cleanup ---
+    expect_false(any(grepl("^hsa:", result$KEGG)), info = test_name)
+    expect_false(any(grepl("^cpd:", result$KEGG)), info = test_name)
+    expect_false(any(grepl("^path:", result$KEGG)), info = test_name)
+
+    # --- Missing value checks ---
+    expect_false(any(is.na(result$KEGG)), info = test_name)
+    expect_false(any(is.na(result$value)), info = test_name)
+
+    # --- Row count check ---
+    expected_nrows <- sum(vapply(de_list, function(x) nrow(x$de_table), numeric(1)))
+    expect_equal(nrow(result), expected_nrows,
+                 info = glue::glue("{test_name}: unexpected number of merged rows"))
+  })
 })
+
 
 test_that("download_kgml caches and returns file path", {
 
