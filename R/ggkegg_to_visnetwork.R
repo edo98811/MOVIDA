@@ -138,8 +138,16 @@ map_results_to_nodes <- function(g, de_results, return_type = "visNetwork") {
       g
     },
     visNetwork = {
-      visNetwork::visIgraph(g, idToLabel = FALSE) %>%
+      if (nrow(edges_df) == 0) {
+        v <- visNetwork::visNetwork(nodes = nodes_df, main = pathway_name) # if graph has no edges
+      } else {
+        v <- visNetwork::visNetwork(nodes = nodes_df, edges = edges_df, main = pathway_name) # if graph has no edges
+        # v <- visNetwork::visIgraph(g, idToLabel = FALSE)
+      }
+
+      v %>%
         visNetwork::visPhysics(enabled = FALSE) %>%
+        # visNetwork::visLegend(main = pathway_name, zoom = FALSE) %>%
         # visNetwork::visNodes(shape = nodes_df$shape_vis) %>%
         visNetwork::visLegend(main = pathway_name, position = "left", zoom = FALSE) %>%
         visNetwork::visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE)
