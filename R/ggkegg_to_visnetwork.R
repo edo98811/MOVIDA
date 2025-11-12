@@ -44,13 +44,24 @@ kegg_to_graph <- function(path_id,
   nodes_df <- add_compound_names(nodes_df, bfc_map)
   nodes_df <- scale_dimensions(nodes_df, factor = scaling_factor)
   nodes_df <- add_tooltip(nodes_df)
+  nodes_df <- add_group(nodes_df)
 
-  edges_df <- style_edges(edges_df)
+  if (nrow(edges_df)) edges_df <- style_edges(edges_df)
 
   # --- 5. Build pathway name ---
   pathway_name <- paste0("(", path_id, ") ", get_pathway_name(path_id))
 
-  g <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
+  if (nrow(edges_df) == 0) {
+    fake_edges <- data.frame(from = nodes_df$name[1], to = nodes_df$name[1])
+    g <- igraph::graph_from_data_frame(fake_edges, directed = FALSE, vertices = nodes_df)
+    g <- igraph::delete_edges(g, igraph::E(g)) # remove the fake edge
+    warning("No edges in the kgml graph.")
+    # g <- make_empty_graph(n = 0, directed = FALSE)
+    # g <- add_vertices(g, nrow(nodes_df), attr = as.list(nodes_df))
+  } else {
+    g <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
+  }
+  g <- igraph::permute(g, order(igraph::V(g)$label))
   igraph::graph_attr(g, "title") <- pathway_name
 
   return(g)
@@ -106,7 +117,19 @@ map_results_to_nodes <- function(g, de_results, return_type = "visNetwork") {
   # --- 2. Color and style nodes and edges ---
   nodes_df <- add_tooltip(nodes_df)
 
-  g <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
+  if (nrow(edges_df) == 0) {
+    fake_edges <- data.frame(from = nodes_df$name[1], to = nodes_df$name[1])
+    g <- igraph::graph_from_data_frame(fake_edges, directed = FALSE, vertices = nodes_df)
+    g <- igraph::delete_edges(g, igraph::E(g))
+    warning("No edges in the kgml graph.")
+    # remove the fake edge
+    # g <- make_empty_graph(n = 0, directed = FALSE)
+    # g <- add_vertices(g, nrow(nodes_df), attr = as.list(nodes_df))
+  } else {
+    g <- igraph::graph_from_data_frame(edges_df, directed = FALSE, vertices = nodes_df)
+  }
+
+  g <- igraph::permute(g, order(igraph::V(g)$label))
   igraph::graph_attr(g, "title") <- pathway_name
   
   # --- 5. Build ---
