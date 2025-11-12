@@ -20,7 +20,7 @@ kegg_to_graph <- function(path_id,
   if (!is.character(organism) || length(organism) != 1) stop("organism must be a single character string")
   organism <- to_organism_kegg(organism)
 
-  path <- "kegg_cache"
+  path <- tools::R_user_dir("BiocFileCache", which = "cache")
   bfc_kegg <- BiocFileCache(cache = file.path(path, "kegg_maps"), ask = FALSE)
   bfc_map <- BiocFileCache(cache = file.path(path, "mappings"), ask = FALSE)
 
