@@ -103,6 +103,7 @@ map_results_to_nodes <- function(g, de_results, return_type = "visNetwork") {
 
   if (is.null(de_results) || length(de_results) == 0) {
     return(g)
+    warning("No valid differential expression results provided. Returning original graph.")
   }
 
   nodes_df <- igraph::as_data_frame(g, what = "vertices")
@@ -149,8 +150,9 @@ map_results_to_nodes <- function(g, de_results, return_type = "visNetwork") {
         visNetwork::visPhysics(enabled = FALSE) %>%
         # visNetwork::visLegend(main = pathway_name, zoom = FALSE) %>%
         # visNetwork::visNodes(shape = nodes_df$shape_vis) %>%
-        visNetwork::visLegend(main = pathway_name, position = "left", zoom = FALSE) %>%
-        visNetwork::visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE)
+        # visNetwork::visLegend(main = pathway_name, position = "left", zoom = FALSE) %>%
+        visNetwork::visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, selectedBy = "group")
+        # visNetwork::visSetTitle(main = pathway_name)
     },
     stop("Invalid return_type. Must be 'igraph' or 'visNetwork'.")
   )
@@ -158,6 +160,29 @@ map_results_to_nodes <- function(g, de_results, return_type = "visNetwork") {
   return(result)
 }
 
+#' Add group information to nodes based on 'undefined' groups.
+#' @param nodes_df Data frame of nodes with columns: id, kegg_name, components.
+#' @return nodes_df with added 'group' column for visNetwork grouping.
+add_group <- function(nodes_df) {
+  undefined_idx <- which(!is.na(nodes_df$kegg_name) & nodes_df$kegg_name == "undefined")
+
+  if (length(undefined_idx) == 0) {
+    return(nodes_df)
+  }
+
+  undefined_nodes <- nodes_df[undefined_idx, , drop = FALSE]
+
+  for (i in seq_len(nrow(undefined_nodes))) {
+    if (is.na(undefined_nodes$components[i]) || undefined_nodes$components[i] == "") next # If group is NA
+    ids <- strsplit(undefined_nodes$components[i], ";", fixed = TRUE)[[1]]
+    ids <- append(ids, undefined_nodes$id[i])
+
+    group_label <- paste0("group_", undefined_nodes$id[i])
+    nodes_df[nodes_df$id %in% ids, "group"] <- group_label
+  }
+
+  return(nodes_df)
+}
 
 #' Scale node dimensions for better visualization.
 #' @param nodes_df Data frame of nodes with x and y coordinates.
