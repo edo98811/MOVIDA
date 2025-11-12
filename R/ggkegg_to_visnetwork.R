@@ -7,7 +7,7 @@
 #' @param scaling_factor Numeric factor to scale node sizes.
 #' @return An igraph or visNetwork object representing the pathway.
 #'
-#' @importFrom igraph graph_from_data_frame graph_attr
+#' @importFrom igraph graph_from_data_frame graph_attr make_empty_graph add_vertices delete_edges E V
 #'
 #' @export
 kegg_to_graph <- function(path_id,
@@ -74,7 +74,7 @@ kegg_to_graph <- function(path_id,
 #' @param return_type Output type: "igraph" or "visNetwork".
 #' @return An igraph or visNetwork object with mapped results.
 #' @importFrom visNetwork visIgraph visPhysics visLegend visOptions
-#' @importFrom igraph as_data_frame graph_from_data_frame graph_attr
+#' @importFrom igraph as_data_frame graph_from_data_frame graph_attr permute V E
 #' @export
 map_results_to_nodes <- function(g, de_results, return_type = "visNetwork") {
   message("Mapping differential expression results to nodes...")
