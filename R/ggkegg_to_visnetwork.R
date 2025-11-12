@@ -14,7 +14,7 @@ kegg_to_graph <- function(path_id,
                           organism = "mmu",
                           de_results = NULL,
                           return_type = "igraph",
-                          scaling_factor = 2.5) {
+                          scaling_factor = 1.5) {
   # --- 0. Validate inputs ---
   if (!is_valid_pathway(path_id)) stop("Invalid KEGG pathway ID format.")
   if (!is.character(organism) || length(organism) != 1) stop("organism must be a single character string")
@@ -45,6 +45,7 @@ kegg_to_graph <- function(path_id,
   nodes_df <- scale_dimensions(nodes_df, factor = scaling_factor)
   nodes_df <- add_tooltip(nodes_df)
   nodes_df <- add_group(nodes_df)
+  nodes_df <- nodes_df[order(nodes_df$label), ]
 
   if (nrow(edges_df)) edges_df <- style_edges(edges_df)
 
